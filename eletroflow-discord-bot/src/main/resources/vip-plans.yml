@@ -1,0 +1,9 @@
+plans:
+  vip-bronze:
+    displayName: VIP Bronze
+    discordRoleId: "0"
+    description: Bronze benefits
+  vip-gold:
+    displayName: VIP Gold
+    discordRoleId: "0"
+    description: Gold benefits

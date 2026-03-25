@@ -1,0 +1,5 @@
+plans:
+  vip-bronze:
+    luckPermsGroup: vipbronze
+  vip-gold:
+    luckPermsGroup: vipgold
