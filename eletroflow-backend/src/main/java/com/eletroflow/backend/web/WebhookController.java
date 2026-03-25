@@ -1,9 +1,10 @@
 package com.eletroflow.backend.web;
 
+import com.eletroflow.backend.efi.EfiWebhookPayload;
 import com.eletroflow.backend.efi.EfiPixClient;
 import com.eletroflow.backend.service.PaymentConfirmationService;
 import com.eletroflow.shared.dto.PaymentWebhookRequest;
-import jakarta.validation.Valid;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,11 +30,27 @@ public class WebhookController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void receivePixWebhook(
             @RequestHeader(name = "X-Webhook-Secret", required = false) String providedSecret,
-            @Valid @RequestBody PaymentWebhookRequest request
+            @RequestBody EfiWebhookPayload payload
     ) {
         if (!efiPixClient.validateWebhookSecret(providedSecret)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid webhook secret");
         }
-        paymentConfirmationService.confirmPayment(request);
+        if (payload.pix() == null || payload.pix().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Webhook payload does not contain pix events");
+        }
+        payload.pix().forEach(pixItem -> paymentConfirmationService.confirmPayment(new PaymentWebhookRequest(
+                pixItem.txid(),
+                pixItem.endToEndId(),
+                pixItem.valor(),
+                extractPayerDocument(pixItem),
+                pixItem.horario()
+        )));
+    }
+
+    private String extractPayerDocument(EfiWebhookPayload.PixItem pixItem) {
+        return Optional.ofNullable(pixItem.gnExtras())
+                .map(EfiWebhookPayload.GnExtras::pagador)
+                .map(pagador -> pagador.cpf() != null ? pagador.cpf() : pagador.cnpj())
+                .orElse(null);
     }
 }

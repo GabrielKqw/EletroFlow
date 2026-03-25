@@ -50,6 +50,9 @@ public class PaymentConfirmationService {
         }
         PaymentEntity payment = paymentRepository.findByTxid(request.txid())
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found for txid"));
+        if (payment.getAmount().compareTo(request.amount()) != 0) {
+            throw new IllegalStateException("Webhook amount does not match payment amount");
+        }
         if (payment.getStatus() == PaymentStatus.CONFIRMED) {
             return;
         }

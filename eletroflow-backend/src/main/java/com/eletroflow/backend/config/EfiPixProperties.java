@@ -8,6 +8,7 @@ public record EfiPixProperties(
         String clientId,
         String clientSecret,
         String certificatePath,
+        String certificatePassword,
         String pixKey,
         int chargeExpirationSeconds,
         String webhookSecret
