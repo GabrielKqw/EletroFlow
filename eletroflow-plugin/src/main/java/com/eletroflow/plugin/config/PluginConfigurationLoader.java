@@ -24,6 +24,9 @@ public class PluginConfigurationLoader {
         FileConfiguration config = plugin.getConfig();
         return new PluginSettings(
                 config.getString("server.id"),
+                new MinecraftSettings(
+                        config.getBoolean("minecraft.online-mode", true)
+                ),
                 new DatabaseSettings(
                         config.getString("database.jdbc-url"),
                         config.getString("database.username"),
@@ -43,7 +46,9 @@ public class PluginConfigurationLoader {
                         config.getString("efi.certificate-path"),
                         config.getString("efi.certificate-password"),
                         config.getString("efi.pix-key"),
-                        config.getInt("efi.charge-expiration-seconds", 1800)
+                        config.getInt("efi.charge-expiration-seconds", 1800),
+                        config.getString("efi.receiver-name"),
+                        config.getString("efi.receiver-document")
                 ),
                 config.getLong("sync.interval-ticks", 200L)
         );
@@ -60,7 +65,6 @@ public class PluginConfigurationLoader {
                             entry.getValue().amount(),
                             entry.getValue().currency(),
                             entry.getValue().luckPermsGroup(),
-                            entry.getValue().discordRoleId(),
                             entry.getValue().durationDays(),
                             entry.getValue().active(),
                             entry.getValue().sortOrder()

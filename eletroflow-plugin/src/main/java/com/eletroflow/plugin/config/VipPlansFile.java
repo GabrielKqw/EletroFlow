@@ -10,11 +10,9 @@ public record VipPlansFile(Map<String, VipPlanNode> plans) {
             BigDecimal amount,
             String currency,
             String luckPermsGroup,
-            String discordRoleId,
             int durationDays,
             boolean active,
             int sortOrder
     ) {
     }
 }
-

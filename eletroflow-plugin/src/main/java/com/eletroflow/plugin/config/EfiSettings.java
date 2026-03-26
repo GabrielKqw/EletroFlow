@@ -7,7 +7,8 @@ public record EfiSettings(
         String certificatePath,
         String certificatePassword,
         String pixKey,
-        int chargeExpirationSeconds
+        int chargeExpirationSeconds,
+        String receiverName,
+        String receiverDocument
 ) {
 }
-

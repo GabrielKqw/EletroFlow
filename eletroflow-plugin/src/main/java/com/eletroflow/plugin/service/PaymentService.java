@@ -17,43 +17,55 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final AuditLogRepository auditLogRepository;
+    private final MinecraftIdentityService minecraftIdentityService;
     private final EfiPixClient efiPixClient;
 
     public PaymentService(
             PaymentRepository paymentRepository,
             UserRepository userRepository,
             AuditLogRepository auditLogRepository,
+            MinecraftIdentityService minecraftIdentityService,
             EfiPixClient efiPixClient
     ) {
         this.paymentRepository = paymentRepository;
         this.userRepository = userRepository;
         this.auditLogRepository = auditLogRepository;
+        this.minecraftIdentityService = minecraftIdentityService;
         this.efiPixClient = efiPixClient;
     }
 
     public PaymentRecord createOrReusePayment(
             String discordId,
-            String minecraftUuid,
             String minecraftUsername,
+            String payerCpf,
             String threadId,
             PlanRecord plan
     ) {
-        validatePlayerIdentity(minecraftUuid, minecraftUsername);
-        UserRecord user = userRepository.upsert(discordId, minecraftUuid, minecraftUsername);
+        MinecraftIdentityService.ResolvedMinecraftIdentity identity = minecraftIdentityService.resolve(minecraftUsername);
+        String normalizedCpf = normalizeCpf(payerCpf);
+        UserRecord user = userRepository.upsert(discordId, identity.uuid(), identity.username());
         Optional<PaymentRecord> reusable = paymentRepository.findReusablePendingPayment(discordId, plan.key());
         if (reusable.isPresent()) {
             auditLogRepository.save("PAYMENT", reusable.get().id(), "PIX_REUSED", "txid=" + reusable.get().txid());
             return reusable.get();
         }
-        EfiPixClient.PixCharge pixCharge = efiPixClient.createCharge(plan.amount(), "VIP " + plan.displayName());
+        EfiPixClient.PixCharge pixCharge = efiPixClient.createCharge(
+                plan.amount(),
+                "VIP " + plan.displayName(),
+                identity.username(),
+                normalizedCpf
+        );
         PaymentCreation creation = new PaymentCreation(
                 UUID.randomUUID().toString(),
                 user.id(),
                 plan.key(),
                 plan.amount(),
                 pixCharge.txid(),
+                identity.username(),
+                normalizedCpf,
                 pixCharge.copyPasteCode(),
                 pixCharge.qrCodeBase64(),
+                pixCharge.qrCodeUrl(),
                 threadId,
                 pixCharge.expiresAt()
         );
@@ -67,8 +79,11 @@ public class PaymentService {
                 creation.planKey(),
                 creation.amount(),
                 creation.txid(),
+                creation.payerName(),
+                creation.payerCpf(),
                 creation.copyPasteCode(),
                 creation.qrCodeBase64(),
+                creation.qrCodeUrl(),
                 creation.discordThreadId(),
                 com.eletroflow.shared.enums.PaymentStatus.PENDING,
                 creation.expiresAt(),
@@ -80,14 +95,14 @@ public class PaymentService {
         return paymentRecord;
     }
 
-    private void validatePlayerIdentity(String minecraftUuid, String minecraftUsername) {
-        try {
-            UUID.fromString(minecraftUuid);
-        } catch (Exception exception) {
-            throw new IllegalArgumentException("UUID do Minecraft invalido");
+    private String normalizeCpf(String payerCpf) {
+        if (payerCpf == null) {
+            throw new IllegalArgumentException("CPF do pagador invalido");
         }
-        if (minecraftUsername == null || minecraftUsername.isBlank() || minecraftUsername.length() > 16) {
-            throw new IllegalArgumentException("Nick do Minecraft invalido");
+        String normalized = payerCpf.replaceAll("\\D", "");
+        if (normalized.length() != 11) {
+            throw new IllegalArgumentException("CPF do pagador invalido");
         }
+        return normalized;
     }
 }

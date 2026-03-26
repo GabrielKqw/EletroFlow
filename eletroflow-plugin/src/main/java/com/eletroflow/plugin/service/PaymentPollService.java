@@ -11,9 +11,8 @@ import com.eletroflow.plugin.storage.PaymentRepository;
 import com.eletroflow.plugin.storage.PaymentTransactionRepository;
 import com.eletroflow.plugin.storage.PlanRepository;
 import com.eletroflow.plugin.storage.VipGrantRepository;
+import java.util.logging.Level;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitTask;
 
 public class PaymentPollService {
 
@@ -27,7 +26,8 @@ public class PaymentPollService {
     private final LuckPermsProvisionService luckPermsProvisionService;
     private final DiscordBotService discordBotService;
     private final AtomicBoolean running = new AtomicBoolean(false);
-    private BukkitTask task;
+    private final AtomicBoolean active = new AtomicBoolean(false);
+    private Thread workerThread;
 
     public PaymentPollService(
             EletroFlowPlugin plugin,
@@ -52,12 +52,41 @@ public class PaymentPollService {
     }
 
     public void start(long intervalTicks) {
-        task = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::poll, 40L, intervalTicks);
+        long intervalMillis = Math.max(1_000L, intervalTicks * 50L);
+        if (!active.compareAndSet(false, true)) {
+            return;
+        }
+        workerThread = new Thread(() -> runLoop(intervalMillis), "EletroFlow-PaymentPoll");
+        workerThread.setDaemon(true);
+        workerThread.start();
     }
 
     public void stop() {
-        if (task != null) {
-            task.cancel();
+        active.set(false);
+        if (workerThread != null) {
+            workerThread.interrupt();
+        }
+    }
+
+    private void runLoop(long intervalMillis) {
+        try {
+            Thread.sleep(3_000L);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return;
+        }
+        while (active.get() && !Thread.currentThread().isInterrupted()) {
+            try {
+                poll();
+            } catch (Exception exception) {
+                plugin.getLogger().log(Level.WARNING, "Falha no ciclo de verificacao Pix", exception);
+            }
+            try {
+                Thread.sleep(intervalMillis);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
     }
 
@@ -88,10 +117,10 @@ public class PaymentPollService {
                 vipGrantRepository.saveGranted(payment, plan);
                 paymentRepository.markRewarded(payment.id());
                 auditLogRepository.save("VIP_GRANT", payment.id(), "VIP_GRANTED", "group=" + plan.luckPermsGroup());
-                discordBotService.notifyApprovedPayment(payment, plan);
+                discordBotService.notifyApprovedPayment(payment, plan, result);
             }
         } catch (Exception exception) {
-            plugin.getLogger().warning("Falha ao processar pagamentos Pix: " + exception.getMessage());
+            plugin.getLogger().log(Level.WARNING, "Falha ao processar pagamentos Pix", exception);
         } finally {
             running.set(false);
         }

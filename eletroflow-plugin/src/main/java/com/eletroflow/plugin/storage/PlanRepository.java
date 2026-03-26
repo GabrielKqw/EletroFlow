@@ -29,15 +29,14 @@ public class PlanRepository {
                 planKeys.add(definition.key());
                 try (PreparedStatement statement = connection.prepareStatement("""
                         insert into vip_plans (
-                            plan_key, display_name, amount, currency, luckperms_group, discord_role_id,
+                            plan_key, display_name, amount, currency, luckperms_group,
                             duration_days, active, sort_order, updated_at
-                        ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         on conflict (plan_key) do update set
                             display_name = excluded.display_name,
                             amount = excluded.amount,
                             currency = excluded.currency,
                             luckperms_group = excluded.luckperms_group,
-                            discord_role_id = excluded.discord_role_id,
                             duration_days = excluded.duration_days,
                             active = excluded.active,
                             sort_order = excluded.sort_order,
@@ -48,11 +47,10 @@ public class PlanRepository {
                     statement.setBigDecimal(3, definition.amount());
                     statement.setString(4, definition.currency());
                     statement.setString(5, definition.luckPermsGroup());
-                    statement.setString(6, definition.discordRoleId());
-                    statement.setInt(7, definition.durationDays());
-                    statement.setBoolean(8, definition.active());
-                    statement.setInt(9, definition.sortOrder());
-                    statement.setObject(10, now);
+                    statement.setInt(6, definition.durationDays());
+                    statement.setBoolean(7, definition.active());
+                    statement.setInt(8, definition.sortOrder());
+                    statement.setObject(9, now);
                     statement.executeUpdate();
                 }
             }
@@ -82,7 +80,7 @@ public class PlanRepository {
     public List<PlanRecord> findActivePlans() {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
-                     select plan_key, display_name, amount, currency, luckperms_group, discord_role_id, duration_days, active, sort_order
+                     select plan_key, display_name, amount, currency, luckperms_group, duration_days, active, sort_order
                      from vip_plans
                      where active = true
                      order by sort_order asc, amount asc
@@ -101,7 +99,7 @@ public class PlanRepository {
     public PlanRecord findRequiredPlan(String planKey) {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
-                     select plan_key, display_name, amount, currency, luckperms_group, discord_role_id, duration_days, active, sort_order
+                     select plan_key, display_name, amount, currency, luckperms_group, duration_days, active, sort_order
                      from vip_plans
                      where plan_key = ? and active = true
                      """)) {
@@ -124,7 +122,6 @@ public class PlanRepository {
                 resultSet.getBigDecimal("amount"),
                 resultSet.getString("currency"),
                 resultSet.getString("luckperms_group"),
-                resultSet.getString("discord_role_id"),
                 resultSet.getInt("duration_days"),
                 resultSet.getBoolean("active"),
                 resultSet.getInt("sort_order")

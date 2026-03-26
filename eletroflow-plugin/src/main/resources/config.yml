@@ -1,6 +1,9 @@
 server:
   id: survival-01
 
+minecraft:
+  online-mode: true
+
 database:
   jdbc-url: jdbc:postgresql://localhost:5432/eletroflow
   username: eletroflow
@@ -21,6 +24,8 @@ efi:
   certificate-password: ""
   pix-key: change-me
   charge-expiration-seconds: 1800
+  receiver-name: change-me
+  receiver-document: change-me
 
 sync:
   interval-ticks: 200

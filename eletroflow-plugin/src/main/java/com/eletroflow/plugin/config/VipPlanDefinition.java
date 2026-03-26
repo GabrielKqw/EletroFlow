@@ -8,10 +8,8 @@ public record VipPlanDefinition(
         BigDecimal amount,
         String currency,
         String luckPermsGroup,
-        String discordRoleId,
         int durationDays,
         boolean active,
         int sortOrder
 ) {
 }
-

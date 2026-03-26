@@ -11,8 +11,10 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Base64;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import javax.net.ssl.KeyManagerFactory;
@@ -23,6 +25,7 @@ import okhttp3.FormBody;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
@@ -42,12 +45,13 @@ public class EfiPixClient {
         this.httpClient = buildHttpClient();
     }
 
-    public PixCharge createCharge(BigDecimal amount, String description) {
+    public PixCharge createCharge(BigDecimal amount, String description, String payerName, String payerCpf) {
         String txid = UUID.randomUUID().toString().replace("-", "").substring(0, 32);
         ChargeRequest chargeRequest = new ChargeRequest(
                 new ChargeCalendar(settings.chargeExpirationSeconds()),
                 new ChargeValue(amount.setScale(2).toPlainString()),
                 settings.pixKey(),
+                new ChargeDebtor(payerCpf, payerName),
                 description
         );
         ChargeResponse chargeResponse = executeAuthorizedRequest(
@@ -66,6 +70,7 @@ public class EfiPixClient {
                 chargeResponse.txid(),
                 qrCodeResponse.qrCode(),
                 qrCodeResponse.imagemQrcode(),
+                qrCodeResponse.linkVisualizacao(),
                 OffsetDateTime.parse(chargeResponse.calendario().criacao()).plusSeconds(Long.parseLong(chargeResponse.calendario().expiracao()))
         );
     }
@@ -83,7 +88,7 @@ public class EfiPixClient {
         PixReceipt pix = response.pix() == null || response.pix().isEmpty() ? null : response.pix().getFirst();
         return new PaymentCheckResult(
                 true,
-                pix == null ? OffsetDateTime.now() : pix.horario(),
+                pix == null || pix.horario() == null ? OffsetDateTime.now() : OffsetDateTime.parse(pix.horario()),
                 pix == null ? txid : pix.endToEndId()
         );
     }
@@ -103,7 +108,8 @@ public class EfiPixClient {
                 .build();
         try (Response response = httpClient.newCall(request).execute()) {
             if (!response.isSuccessful() || response.body() == null) {
-                throw new IllegalStateException("Failed to authenticate with EFI");
+                String errorBody = response.body() == null ? "" : response.body().string();
+                throw new IllegalStateException("Failed to authenticate with EFI: HTTP " + response.code() + " " + errorBody);
             }
             OAuthToken token = objectMapper.readValue(response.body().string(), OAuthToken.class);
             cachedToken = new CachedToken(token.accessToken(), OffsetDateTime.now().plusSeconds(token.expiresIn()));
@@ -126,7 +132,8 @@ public class EfiPixClient {
             }
             try (Response response = httpClient.newCall(builder.build()).execute()) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    throw new IllegalStateException("EFI request failed with status " + response.code());
+                    String errorBody = response.body() == null ? "" : response.body().string();
+                    throw new IllegalStateException("EFI request failed with status " + response.code() + ": " + errorBody);
                 }
                 return objectMapper.readValue(response.body().string(), responseType);
             }
@@ -151,6 +158,11 @@ public class EfiPixClient {
             sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), new SecureRandom());
             return new OkHttpClient.Builder()
                     .sslSocketFactory(sslContext.getSocketFactory(), trustManager)
+                    .protocols(List.of(Protocol.HTTP_1_1))
+                    .connectTimeout(Duration.ofSeconds(20))
+                    .readTimeout(Duration.ofSeconds(20))
+                    .writeTimeout(Duration.ofSeconds(20))
+                    .retryOnConnectionFailure(true)
                     .build();
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to configure EFI mTLS", exception);
@@ -168,6 +180,7 @@ public class EfiPixClient {
             @JsonProperty("calendario") ChargeCalendar calendario,
             @JsonProperty("valor") ChargeValue valor,
             @JsonProperty("chave") String chave,
+            @JsonProperty("devedor") ChargeDebtor devedor,
             @JsonProperty("solicitacaoPagador") String solicitacaoPagador
     ) {
     }
@@ -176,6 +189,12 @@ public class EfiPixClient {
     }
 
     private record ChargeValue(@JsonProperty("original") String original) {
+    }
+
+    private record ChargeDebtor(
+            @JsonProperty("cpf") String cpf,
+            @JsonProperty("nome") String nome
+    ) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -195,7 +214,11 @@ public class EfiPixClient {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record QrCodeResponse(@JsonProperty("qrcode") String qrCode, @JsonProperty("imagemQrcode") String imagemQrcode) {
+    private record QrCodeResponse(
+            @JsonProperty("qrcode") String qrCode,
+            @JsonProperty("imagemQrcode") String imagemQrcode,
+            @JsonProperty("linkVisualizacao") String linkVisualizacao
+    ) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -203,15 +226,15 @@ public class EfiPixClient {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record PixReceipt(String endToEndId, OffsetDateTime horario) {
+    private record PixReceipt(String endToEndId, String horario) {
     }
 
     public record PixCharge(
             String txid,
             String copyPasteCode,
             String qrCodeBase64,
+            String qrCodeUrl,
             OffsetDateTime expiresAt
     ) {
     }
 }
-

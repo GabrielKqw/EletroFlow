@@ -23,6 +23,7 @@
         <luckperms.version>5.4</luckperms.version>
         <jackson.version>2.18.3</jackson.version>
         <okhttp.version>4.12.0</okhttp.version>
+        <pdfbox.version>3.0.3</pdfbox.version>
         <slf4j.version>2.0.17</slf4j.version>
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
         <maven.shade.plugin.version>3.6.0</maven.shade.plugin.version>

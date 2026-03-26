@@ -30,7 +30,6 @@ EletroFlow is a plugin-first payment system for Minecraft servers. The Paper plu
 - PostgreSQL persistence for users, payments, grants, and audit logs
 - idempotent Pix confirmation handling
 - LuckPerms VIP delivery
-- optional Discord role assignment
 
 ![Divider](./assets/neon-divider.svg)
 
@@ -59,7 +58,7 @@ Repository layout:
 5. The plugin creates or reuses a Pix charge through Efi.
 6. The payment is stored with the linked Discord identity, Minecraft identity, thread id, and selected plan.
 7. The plugin polls Pix confirmation.
-8. After confirmation, the plugin records the transaction, persists the VIP grant, applies the LuckPerms group, and can assign the configured Discord role.
+8. After confirmation, the plugin records the transaction, persists the VIP grant, and applies the LuckPerms group.
 
 ![Divider](./assets/neon-divider.svg)
 
@@ -79,7 +78,6 @@ Recommended server preparation:
 
 - keep one channel dedicated to the VIP panel
 - keep one staff role for purchase support
-- enable role assignment only for VIP roles managed by the plugin
 - use private threads to keep each purchase isolated
 
 > Staff publishes the panel once, players open their own private thread, choose a VIP, submit Minecraft data, and receive the Pix charge in the same thread.
@@ -101,7 +99,7 @@ Recommended server preparation:
 4. Submit Minecraft UUID and nickname.
 5. Copy the Pix code or scan the QR code sent by the bot.
 6. Wait for confirmation in the same thread.
-7. Receive the VIP in Minecraft and the optional Discord role.
+7. Receive the VIP group in Minecraft.
 
 **Thread Rules**
 
@@ -180,7 +178,6 @@ VIP catalog:
 - amount
 - currency
 - LuckPerms group
-- Discord role id
 - duration in days
 - active flag
 - sort order

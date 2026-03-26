@@ -53,22 +53,24 @@ public class PaymentRepository {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      insert into payments (
-                         payment_id, user_id, plan_key, amount, txid, copy_paste_code, qr_code_base64, discord_thread_id, provider_reference,
-                         status, created_at, expires_at
-                     ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         payment_id, user_id, plan_key, amount, txid, payer_name, payer_cpf, copy_paste_code, qr_code_base64, discord_thread_id,
+                         provider_reference, status, created_at, expires_at
+                     ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                      """)) {
             statement.setString(1, creation.id());
             statement.setString(2, creation.userId());
             statement.setString(3, creation.planKey());
             statement.setBigDecimal(4, creation.amount());
             statement.setString(5, creation.txid());
-            statement.setString(6, creation.copyPasteCode());
-            statement.setString(7, creation.qrCodeBase64());
-            statement.setString(8, creation.discordThreadId());
-            statement.setString(9, creation.txid());
-            statement.setString(10, PaymentStatus.PENDING.name());
-            statement.setObject(11, OffsetDateTime.now());
-            statement.setObject(12, creation.expiresAt());
+            statement.setString(6, creation.payerName());
+            statement.setString(7, creation.payerCpf());
+            statement.setString(8, creation.copyPasteCode());
+            statement.setString(9, creation.qrCodeBase64());
+            statement.setString(10, creation.discordThreadId());
+            statement.setString(11, creation.qrCodeUrl());
+            statement.setString(12, PaymentStatus.PENDING.name());
+            statement.setObject(13, OffsetDateTime.now());
+            statement.setObject(14, creation.expiresAt());
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to save payment", exception);
@@ -83,11 +85,9 @@ public class PaymentRepository {
                      join users u on u.user_id = p.user_id
                      where p.status = ?
                        and p.rewarded_at is null
-                       and p.expires_at > ?
                      order by p.created_at asc
                      """)) {
             statement.setString(1, PaymentStatus.PENDING.name());
-            statement.setObject(2, OffsetDateTime.now());
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<PaymentRecord> records = new ArrayList<>();
                 while (resultSet.next()) {
@@ -143,8 +143,11 @@ public class PaymentRepository {
                 resultSet.getString("plan_key"),
                 resultSet.getBigDecimal("amount"),
                 resultSet.getString("txid"),
+                resultSet.getString("payer_name"),
+                resultSet.getString("payer_cpf"),
                 resultSet.getString("copy_paste_code"),
                 resultSet.getString("qr_code_base64"),
+                resultSet.getString("provider_reference"),
                 resultSet.getString("discord_thread_id"),
                 PaymentStatus.valueOf(resultSet.getString("status")),
                 resultSet.getObject("expires_at", OffsetDateTime.class),

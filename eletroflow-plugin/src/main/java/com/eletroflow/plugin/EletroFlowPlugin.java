@@ -4,8 +4,10 @@ import com.eletroflow.plugin.config.PluginConfigurationLoader;
 import com.eletroflow.plugin.config.PluginSettings;
 import com.eletroflow.plugin.efi.EfiPixClient;
 import com.eletroflow.plugin.service.DiscordBotService;
+import com.eletroflow.plugin.service.MinecraftIdentityService;
 import com.eletroflow.plugin.service.PaymentPollService;
 import com.eletroflow.plugin.service.PaymentService;
+import com.eletroflow.plugin.service.ReceiptPdfService;
 import com.eletroflow.plugin.storage.AuditLogRepository;
 import com.eletroflow.plugin.storage.DatabaseManager;
 import com.eletroflow.plugin.storage.PaymentRepository;
@@ -40,14 +42,18 @@ public class EletroFlowPlugin extends JavaPlugin {
         PaymentTransactionRepository paymentTransactionRepository = new PaymentTransactionRepository(databaseManager);
         VipGrantRepository vipGrantRepository = new VipGrantRepository(databaseManager);
         AuditLogRepository auditLogRepository = new AuditLogRepository(databaseManager);
-        EfiPixClient efiPixClient = new EfiPixClient(new ObjectMapper(), settings.efi());
+        ObjectMapper objectMapper = new ObjectMapper();
+        EfiPixClient efiPixClient = new EfiPixClient(objectMapper, settings.efi());
+        MinecraftIdentityService minecraftIdentityService = new MinecraftIdentityService(settings.minecraft(), objectMapper);
+        ReceiptPdfService receiptPdfService = new ReceiptPdfService(settings.efi());
         PaymentService paymentService = new PaymentService(
                 paymentRepository,
                 userRepository,
                 auditLogRepository,
+                minecraftIdentityService,
                 efiPixClient
         );
-        discordBotService = new DiscordBotService(settings.discord(), planRepository, paymentService);
+        discordBotService = new DiscordBotService(settings.discord(), planRepository, paymentService, receiptPdfService);
         try {
             discordBotService.start();
         } catch (Exception exception) {
@@ -80,7 +86,10 @@ public class EletroFlowPlugin extends JavaPlugin {
     private void validateDatabaseConnection(DatabaseManager databaseManager) {
         try (Connection ignored = databaseManager.getConnection()) {
         } catch (Exception exception) {
-            throw new IllegalStateException("Failed to connect to PostgreSQL. Execute database/init.sql before starting the plugin.", exception);
+            String reason = exception.getMessage() == null || exception.getMessage().isBlank()
+                    ? exception.getClass().getSimpleName()
+                    : exception.getMessage();
+            throw new IllegalStateException("Failed to connect to PostgreSQL: " + reason, exception);
         }
     }
 }

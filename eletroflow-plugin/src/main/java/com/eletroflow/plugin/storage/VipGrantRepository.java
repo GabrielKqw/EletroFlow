@@ -33,9 +33,8 @@ public class VipGrantRepository {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      insert into vip_grants (
-                         grant_id, payment_id, user_id, plan_key, luckperms_group, discord_role_id,
-                         granted_at, expires_at, status
-                     ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         grant_id, payment_id, user_id, plan_key, luckperms_group, granted_at, expires_at, status
+                     ) values (?, ?, ?, ?, ?, ?, ?, ?)
                      """)) {
             OffsetDateTime grantedAt = OffsetDateTime.now();
             statement.setString(1, UUID.randomUUID().toString());
@@ -43,14 +42,12 @@ public class VipGrantRepository {
             statement.setString(3, payment.userId());
             statement.setString(4, plan.key());
             statement.setString(5, plan.luckPermsGroup());
-            statement.setString(6, plan.discordRoleId());
-            statement.setObject(7, grantedAt);
-            statement.setObject(8, grantedAt.plusDays(plan.durationDays()));
-            statement.setString(9, "GRANTED");
+            statement.setObject(6, grantedAt);
+            statement.setObject(7, grantedAt.plusDays(plan.durationDays()));
+            statement.setString(8, "GRANTED");
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to save vip grant", exception);
         }
     }
 }
-

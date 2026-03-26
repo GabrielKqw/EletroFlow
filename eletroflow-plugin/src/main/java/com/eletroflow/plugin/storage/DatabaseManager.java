@@ -11,10 +11,14 @@ public class DatabaseManager {
 
     public DatabaseManager(DatabaseSettings settings) {
         this.settings = settings;
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException exception) {
+            throw new IllegalStateException("Failed to load PostgreSQL JDBC driver", exception);
+        }
     }
 
     public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(settings.jdbcUrl(), settings.username(), settings.password());
     }
 }
-

@@ -1,18 +1,19 @@
 package com.eletroflow.plugin.service;
 
 import com.eletroflow.plugin.config.DiscordSettings;
+import com.eletroflow.plugin.model.PaymentCheckResult;
 import com.eletroflow.plugin.model.PaymentRecord;
 import com.eletroflow.plugin.model.PlanRecord;
 import com.eletroflow.plugin.storage.PlanRepository;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
@@ -29,24 +30,34 @@ import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.utils.FileUpload;
 import org.jetbrains.annotations.NotNull;
 
 public class DiscordBotService extends ListenerAdapter {
 
     private static final String PANEL_BUTTON = "vip-panel-open-thread";
+    private static final String CLOSE_BUTTON = "vip-thread-close";
     private static final String SELECT_MENU = "vip-plan-select";
     private static final String OWNER_MARKER = "ticket-owner-discord-id:";
     private static final String MODAL_PREFIX = "vip-modal:";
+    private static final Logger LOGGER = Logger.getLogger(DiscordBotService.class.getName());
 
     private final DiscordSettings settings;
     private final PlanRepository planRepository;
     private final PaymentService paymentService;
+    private final ReceiptPdfService receiptPdfService;
     private JDA jda;
 
-    public DiscordBotService(DiscordSettings settings, PlanRepository planRepository, PaymentService paymentService) {
+    public DiscordBotService(
+            DiscordSettings settings,
+            PlanRepository planRepository,
+            PaymentService paymentService,
+            ReceiptPdfService receiptPdfService
+    ) {
         this.settings = settings;
         this.planRepository = planRepository;
         this.paymentService = paymentService;
+        this.receiptPdfService = receiptPdfService;
     }
 
     public void start() throws Exception {
@@ -65,26 +76,22 @@ public class DiscordBotService extends ListenerAdapter {
         }
     }
 
-    public void notifyApprovedPayment(PaymentRecord payment, PlanRecord plan) {
+    public void notifyApprovedPayment(PaymentRecord payment, PlanRecord plan, PaymentCheckResult result) {
         if (jda == null) {
             return;
         }
         ThreadChannel threadChannel = jda.getThreadChannelById(payment.discordThreadId());
         if (threadChannel != null) {
-            threadChannel.sendMessage("Pagamento confirmado. Seu VIP " + plan.displayName() + " foi entregue.").queue();
-        }
-        Guild guild = jda.getGuildById(settings.guildId());
-        if (guild == null) {
-            return;
-        }
-        String roleId = plan.discordRoleId();
-        if (roleId == null || roleId.isBlank() || roleId.equals("0")) {
-            return;
-        }
-        Member member = guild.retrieveMemberById(payment.discordId()).complete();
-        Role role = guild.getRoleById(roleId);
-        if (member != null && role != null) {
-            guild.addRoleToMember(member, role).queue();
+            byte[] receiptPdf = receiptPdfService.generate(payment, plan, result);
+            threadChannel.sendMessageEmbeds(new EmbedBuilder()
+                            .setTitle("Pagamento confirmado")
+                            .setDescription("Seu VIP " + plan.displayName() + " foi entregue com sucesso.")
+                            .addField("TXID", payment.txid(), false)
+                            .addField("EndToEnd", result.endToEndId(), false)
+                            .addField("Confirmado em", result.confirmedAt() == null ? "agora" : result.confirmedAt().toString(), false)
+                            .build())
+                    .addFiles(FileUpload.fromData(receiptPdf, "comprovante-pix-" + payment.txid() + ".pdf"))
+                    .queue();
         }
     }
 
@@ -114,6 +121,10 @@ public class DiscordBotService extends ListenerAdapter {
 
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
+        if (CLOSE_BUTTON.equals(event.getComponentId())) {
+            handleCloseRequest(event);
+            return;
+        }
         if (!PANEL_BUTTON.equals(event.getComponentId())) {
             return;
         }
@@ -147,8 +158,8 @@ public class DiscordBotService extends ListenerAdapter {
         }
         String planKey = event.getValues().getFirst();
         Modal modal = Modal.create(MODAL_PREFIX + planKey, "Vincular conta Minecraft")
-                .addActionRow(TextInput.create("uuid", "UUID do Minecraft", TextInputStyle.SHORT).setRequired(true).build())
                 .addActionRow(TextInput.create("username", "Nick do Minecraft", TextInputStyle.SHORT).setRequired(true).build())
+                .addActionRow(TextInput.create("cpf", "CPF do pagador", TextInputStyle.SHORT).setRequired(true).build())
                 .build();
         event.replyModal(modal).queue();
     }
@@ -163,28 +174,44 @@ public class DiscordBotService extends ListenerAdapter {
             return;
         }
         String planKey = event.getModalId().substring(MODAL_PREFIX.length());
-        try {
-            PlanRecord plan = planRepository.findRequiredPlan(planKey);
-            PaymentRecord payment = paymentService.createOrReusePayment(
-                    event.getUser().getId(),
-                    event.getValue("uuid").getAsString(),
-                    event.getValue("username").getAsString(),
-                    event.getChannel().getId(),
-                    plan
-            );
-            event.replyEmbeds(new EmbedBuilder()
-                            .setTitle("Pix gerado")
-                            .setDescription("Finalize o pagamento usando o codigo abaixo.")
-                            .addField("VIP", plan.displayName(), false)
-                            .addField("Valor", payment.amount() + " " + plan.currency(), false)
-                            .addField("Codigo copia e cola", payment.copyPasteCode(), false)
-                            .build())
-                    .queue();
-        } catch (IllegalArgumentException exception) {
-            event.reply(exception.getMessage()).setEphemeral(true).queue();
-        } catch (RuntimeException exception) {
-            event.reply("Nao consegui gerar a cobranca Pix agora. Tente novamente em alguns minutos.").setEphemeral(true).queue();
-        }
+        String minecraftUsername = event.getValue("username").getAsString();
+        String payerCpf = event.getValue("cpf").getAsString();
+        event.deferReply().queue();
+        event.getJDA().getGatewayPool().submit(() -> {
+            try {
+                PlanRecord plan = planRepository.findRequiredPlan(planKey);
+                PaymentRecord payment = paymentService.createOrReusePayment(
+                        event.getUser().getId(),
+                        minecraftUsername,
+                        payerCpf,
+                        event.getChannel().getId(),
+                        plan
+                );
+                FileUpload qrCodeFile = buildQrCodeFile(payment);
+                EmbedBuilder embedBuilder = new EmbedBuilder()
+                        .setTitle("Pix gerado")
+                        .setDescription("Finalize o pagamento usando o codigo abaixo.")
+                        .addField("VIP", plan.displayName(), false)
+                        .addField("Valor", payment.amount() + " " + plan.currency(), false)
+                        .addField("Codigo copia e cola", payment.copyPasteCode(), false);
+                if (qrCodeFile != null) {
+                    embedBuilder.addField("QR Code", "O arquivo do QR Code foi anexado nesta mensagem.", false);
+                }
+                var messageAction = event.getHook().sendMessageEmbeds(embedBuilder.build())
+                        .addActionRow(buildPixButton(payment));
+                if (qrCodeFile != null) {
+                    messageAction = messageAction.addFiles(qrCodeFile);
+                }
+                messageAction.queue();
+            } catch (IllegalArgumentException exception) {
+                event.getHook().sendMessage(exception.getMessage()).setEphemeral(true).queue();
+            } catch (RuntimeException exception) {
+                LOGGER.log(Level.SEVERE, "Falha ao gerar cobranca Pix para o atendimento " + event.getChannel().getId(), exception);
+                event.getHook().sendMessage("Nao consegui gerar a cobranca Pix agora. Tente novamente em alguns minutos.")
+                        .setEphemeral(true)
+                        .queue();
+            }
+        });
     }
 
     private void sendPlanSelection(ThreadChannel threadChannel, String discordId) {
@@ -197,7 +224,10 @@ public class DiscordBotService extends ListenerAdapter {
                 ? "<@&" + settings.supportRoleId() + ">\n"
                 : "";
         threadChannel.sendMessage(supportMention + OWNER_MARKER + discordId)
-                .setComponents(ActionRow.of(StringSelectMenu.create(SELECT_MENU).addOptions(options).setPlaceholder("Selecione o VIP desejado").build()))
+                .setComponents(
+                        ActionRow.of(StringSelectMenu.create(SELECT_MENU).addOptions(options).setPlaceholder("Selecione o VIP desejado").build()),
+                        ActionRow.of(Button.danger(CLOSE_BUTTON, "Encerrar atendimento"))
+                )
                 .queue(message -> message.pin().queue());
     }
 
@@ -215,7 +245,55 @@ public class DiscordBotService extends ListenerAdapter {
                         && message.getContentRaw().contains(OWNER_MARKER + discordId));
     }
 
+    private void handleCloseRequest(ButtonInteractionEvent event) {
+        if (!event.getChannelType().isThread()) {
+            event.reply("Esse botao so pode ser usado dentro do atendimento VIP.").setEphemeral(true).queue();
+            return;
+        }
+        ThreadChannel threadChannel = event.getChannel().asThreadChannel();
+        if (!isThreadOwner(threadChannel, event.getUser().getId()) && !isSupportMember(event)) {
+            event.reply("Somente o dono do atendimento ou a equipe pode encerrar esse atendimento.").setEphemeral(true).queue();
+            return;
+        }
+        event.deferReply(true).queue();
+        threadChannel.getManager()
+                .setArchived(true)
+                .queue(
+                        ignored -> event.getHook().sendMessage("Atendimento encerrado com sucesso.").queue(),
+                        failure -> event.getHook().sendMessage("Nao consegui encerrar esse atendimento agora.").queue()
+                );
+    }
+
+    private boolean isSupportMember(ButtonInteractionEvent event) {
+        if (event.getMember() == null || settings.supportRoleId() == null || settings.supportRoleId().isBlank() || settings.supportRoleId().equals("0")) {
+            return false;
+        }
+        return event.getMember().getRoles().stream().anyMatch(role -> role.getId().equals(settings.supportRoleId()));
+    }
+
     private String sanitize(String input) {
         return input.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9-]", "-");
+    }
+
+    private Button buildPixButton(PaymentRecord payment) {
+        if (payment.qrCodeUrl() != null && payment.qrCodeUrl().startsWith("http")) {
+            return Button.link(payment.qrCodeUrl(), "Abrir QR Code");
+        }
+        return Button.secondary("vip-qr-unavailable", "QR Code indisponivel").asDisabled();
+    }
+
+    private FileUpload buildQrCodeFile(PaymentRecord payment) {
+        if (payment.qrCodeBase64() == null || payment.qrCodeBase64().isBlank()) {
+            return null;
+        }
+        String data = payment.qrCodeBase64();
+        int separatorIndex = data.indexOf(',');
+        if (separatorIndex < 0) {
+            return null;
+        }
+        String header = data.substring(0, separatorIndex);
+        String encoded = data.substring(separatorIndex + 1);
+        String extension = header.contains("image/png") ? "png" : "svg";
+        return FileUpload.fromData(java.util.Base64.getDecoder().decode(encoded), "pix-qrcode." + extension);
     }
 }
