@@ -24,8 +24,10 @@ public class PaymentRepository {
     public Optional<PaymentRecord> findReusablePendingPayment(String discordId, String planKey) {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
-                     select * from payments
-                     where discord_id = ? and plan_key = ? and status = ?
+                     select p.*, u.discord_id, u.minecraft_uuid, u.minecraft_username
+                     from payments p
+                     join users u on u.user_id = p.user_id
+                     where u.discord_id = ? and p.plan_key = ? and p.status = ?
                      order by created_at desc
                      limit 1
                      """)) {
@@ -51,25 +53,22 @@ public class PaymentRepository {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      insert into payments (
-                         payment_id, discord_id, minecraft_uuid, minecraft_username, plan_key, amount,
-                         txid, copy_paste_code, qr_code_base64, discord_thread_id, provider_reference,
+                         payment_id, user_id, plan_key, amount, txid, copy_paste_code, qr_code_base64, discord_thread_id, provider_reference,
                          status, created_at, expires_at
-                     ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                      """)) {
             statement.setString(1, creation.id());
-            statement.setString(2, creation.discordId());
-            statement.setString(3, creation.minecraftUuid());
-            statement.setString(4, creation.minecraftUsername());
-            statement.setString(5, creation.planKey());
-            statement.setBigDecimal(6, creation.amount());
-            statement.setString(7, creation.txid());
-            statement.setString(8, creation.copyPasteCode());
-            statement.setString(9, creation.qrCodeBase64());
-            statement.setString(10, creation.discordThreadId());
-            statement.setString(11, creation.txid());
-            statement.setString(12, PaymentStatus.PENDING.name());
-            statement.setObject(13, OffsetDateTime.now());
-            statement.setObject(14, creation.expiresAt());
+            statement.setString(2, creation.userId());
+            statement.setString(3, creation.planKey());
+            statement.setBigDecimal(4, creation.amount());
+            statement.setString(5, creation.txid());
+            statement.setString(6, creation.copyPasteCode());
+            statement.setString(7, creation.qrCodeBase64());
+            statement.setString(8, creation.discordThreadId());
+            statement.setString(9, creation.txid());
+            statement.setString(10, PaymentStatus.PENDING.name());
+            statement.setObject(11, OffsetDateTime.now());
+            statement.setObject(12, creation.expiresAt());
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to save payment", exception);
@@ -79,11 +78,13 @@ public class PaymentRepository {
     public List<PaymentRecord> findPendingPayments() {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
-                     select * from payments
-                     where status = ?
-                       and rewarded_at is null
-                       and expires_at > ?
-                     order by created_at asc
+                     select p.*, u.discord_id, u.minecraft_uuid, u.minecraft_username
+                     from payments p
+                     join users u on u.user_id = p.user_id
+                     where p.status = ?
+                       and p.rewarded_at is null
+                       and p.expires_at > ?
+                     order by p.created_at asc
                      """)) {
             statement.setString(1, PaymentStatus.PENDING.name());
             statement.setObject(2, OffsetDateTime.now());
@@ -135,6 +136,7 @@ public class PaymentRepository {
     private PaymentRecord map(ResultSet resultSet) throws SQLException {
         return new PaymentRecord(
                 resultSet.getString("payment_id"),
+                resultSet.getString("user_id"),
                 resultSet.getString("discord_id"),
                 resultSet.getString("minecraft_uuid"),
                 resultSet.getString("minecraft_username"),

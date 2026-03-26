@@ -4,7 +4,10 @@ import com.eletroflow.plugin.efi.EfiPixClient;
 import com.eletroflow.plugin.model.PaymentCreation;
 import com.eletroflow.plugin.model.PaymentRecord;
 import com.eletroflow.plugin.model.PlanRecord;
+import com.eletroflow.plugin.model.UserRecord;
+import com.eletroflow.plugin.storage.AuditLogRepository;
 import com.eletroflow.plugin.storage.PaymentRepository;
+import com.eletroflow.plugin.storage.UserRepository;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,10 +15,19 @@ import java.util.UUID;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final UserRepository userRepository;
+    private final AuditLogRepository auditLogRepository;
     private final EfiPixClient efiPixClient;
 
-    public PaymentService(PaymentRepository paymentRepository, EfiPixClient efiPixClient) {
+    public PaymentService(
+            PaymentRepository paymentRepository,
+            UserRepository userRepository,
+            AuditLogRepository auditLogRepository,
+            EfiPixClient efiPixClient
+    ) {
         this.paymentRepository = paymentRepository;
+        this.userRepository = userRepository;
+        this.auditLogRepository = auditLogRepository;
         this.efiPixClient = efiPixClient;
     }
 
@@ -27,16 +39,16 @@ public class PaymentService {
             PlanRecord plan
     ) {
         validatePlayerIdentity(minecraftUuid, minecraftUsername);
+        UserRecord user = userRepository.upsert(discordId, minecraftUuid, minecraftUsername);
         Optional<PaymentRecord> reusable = paymentRepository.findReusablePendingPayment(discordId, plan.key());
         if (reusable.isPresent()) {
+            auditLogRepository.save("PAYMENT", reusable.get().id(), "PIX_REUSED", "txid=" + reusable.get().txid());
             return reusable.get();
         }
         EfiPixClient.PixCharge pixCharge = efiPixClient.createCharge(plan.amount(), "VIP " + plan.displayName());
         PaymentCreation creation = new PaymentCreation(
                 UUID.randomUUID().toString(),
-                discordId,
-                minecraftUuid,
-                minecraftUsername,
+                user.id(),
                 plan.key(),
                 plan.amount(),
                 pixCharge.txid(),
@@ -46,11 +58,12 @@ public class PaymentService {
                 pixCharge.expiresAt()
         );
         paymentRepository.savePayment(creation);
-        return new PaymentRecord(
+        PaymentRecord paymentRecord = new PaymentRecord(
                 creation.id(),
-                creation.discordId(),
-                creation.minecraftUuid(),
-                creation.minecraftUsername(),
+                creation.userId(),
+                user.discordId(),
+                user.minecraftUuid(),
+                user.minecraftUsername(),
                 creation.planKey(),
                 creation.amount(),
                 creation.txid(),
@@ -63,6 +76,8 @@ public class PaymentService {
                 null,
                 null
         );
+        auditLogRepository.save("PAYMENT", paymentRecord.id(), "PIX_CREATED", "txid=" + paymentRecord.txid());
+        return paymentRecord;
     }
 
     private void validatePlayerIdentity(String minecraftUuid, String minecraftUsername) {

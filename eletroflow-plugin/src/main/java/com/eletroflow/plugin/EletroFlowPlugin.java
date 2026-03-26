@@ -6,9 +6,13 @@ import com.eletroflow.plugin.efi.EfiPixClient;
 import com.eletroflow.plugin.service.DiscordBotService;
 import com.eletroflow.plugin.service.PaymentPollService;
 import com.eletroflow.plugin.service.PaymentService;
+import com.eletroflow.plugin.storage.AuditLogRepository;
 import com.eletroflow.plugin.storage.DatabaseManager;
 import com.eletroflow.plugin.storage.PaymentRepository;
+import com.eletroflow.plugin.storage.PaymentTransactionRepository;
 import com.eletroflow.plugin.storage.PlanRepository;
+import com.eletroflow.plugin.storage.UserRepository;
+import com.eletroflow.plugin.storage.VipGrantRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Connection;
 import net.luckperms.api.LuckPerms;
@@ -32,8 +36,17 @@ public class EletroFlowPlugin extends JavaPlugin {
         planRepository.sync(loader.loadVipPlans());
         LuckPerms luckPerms = LuckPermsProvider.get();
         PaymentRepository paymentRepository = new PaymentRepository(databaseManager);
+        UserRepository userRepository = new UserRepository(databaseManager);
+        PaymentTransactionRepository paymentTransactionRepository = new PaymentTransactionRepository(databaseManager);
+        VipGrantRepository vipGrantRepository = new VipGrantRepository(databaseManager);
+        AuditLogRepository auditLogRepository = new AuditLogRepository(databaseManager);
         EfiPixClient efiPixClient = new EfiPixClient(new ObjectMapper(), settings.efi());
-        PaymentService paymentService = new PaymentService(paymentRepository, efiPixClient);
+        PaymentService paymentService = new PaymentService(
+                paymentRepository,
+                userRepository,
+                auditLogRepository,
+                efiPixClient
+        );
         discordBotService = new DiscordBotService(settings.discord(), planRepository, paymentService);
         try {
             discordBotService.start();
@@ -44,6 +57,9 @@ public class EletroFlowPlugin extends JavaPlugin {
                 this,
                 paymentRepository,
                 planRepository,
+                paymentTransactionRepository,
+                vipGrantRepository,
+                auditLogRepository,
                 efiPixClient,
                 new LuckPermsProvisionService(luckPerms),
                 discordBotService

@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 
 public record PaymentRecord(
         String id,
+        String userId,
         String discordId,
         String minecraftUuid,
         String minecraftUsername,
@@ -22,4 +23,3 @@ public record PaymentRecord(
         OffsetDateTime rewardedAt
 ) {
 }
-

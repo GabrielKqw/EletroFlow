@@ -5,9 +5,7 @@ import java.time.OffsetDateTime;
 
 public record PaymentCreation(
         String id,
-        String discordId,
-        String minecraftUuid,
-        String minecraftUsername,
+        String userId,
         String planKey,
         BigDecimal amount,
         String txid,
@@ -17,4 +15,3 @@ public record PaymentCreation(
         OffsetDateTime expiresAt
 ) {
 }
-
