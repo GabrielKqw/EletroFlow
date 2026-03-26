@@ -55,6 +55,23 @@ VIP catalog:
 - activation flag
 - sort order
 
+## Database Setup
+
+Run the SQL script before starting the plugin:
+
+- [init.sql](/Users/Admin/Desktop/pl/database/init.sql)
+
+This script creates:
+
+- PostgreSQL user
+- database
+- tables
+- indexes
+
+After that, adjust the database credentials in:
+
+- [config.yml](/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/config.yml)
+
 ## Build
 
 ```bash

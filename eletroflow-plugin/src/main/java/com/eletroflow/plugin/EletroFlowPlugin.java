@@ -9,8 +9,8 @@ import com.eletroflow.plugin.service.PaymentService;
 import com.eletroflow.plugin.storage.DatabaseManager;
 import com.eletroflow.plugin.storage.PaymentRepository;
 import com.eletroflow.plugin.storage.PlanRepository;
-import com.eletroflow.plugin.storage.SchemaInitializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Connection;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,8 +27,7 @@ public class EletroFlowPlugin extends JavaPlugin {
         PluginConfigurationLoader loader = new PluginConfigurationLoader(this);
         PluginSettings settings = loader.loadSettings();
         DatabaseManager databaseManager = new DatabaseManager(settings.database());
-        SchemaInitializer schemaInitializer = new SchemaInitializer(databaseManager);
-        schemaInitializer.initialize();
+        validateDatabaseConnection(databaseManager);
         PlanRepository planRepository = new PlanRepository(databaseManager);
         planRepository.sync(loader.loadVipPlans());
         LuckPerms luckPerms = LuckPermsProvider.get();
@@ -59,6 +58,13 @@ public class EletroFlowPlugin extends JavaPlugin {
         }
         if (discordBotService != null) {
             discordBotService.stop();
+        }
+    }
+
+    private void validateDatabaseConnection(DatabaseManager databaseManager) {
+        try (Connection ignored = databaseManager.getConnection()) {
+        } catch (Exception exception) {
+            throw new IllegalStateException("Failed to connect to PostgreSQL. Execute database/init.sql before starting the plugin.", exception);
         }
     }
 }
