@@ -1,6 +1,6 @@
 # EletroFlow
 
-![EletroFlow](https://i.pinimg.com/originals/22/81/36/228136787949a85c103a630c753726aa.gif)
+![EletroFlow](./assets/eletroflow-banner.gif)
 
 EletroFlow is a Paper plugin for VIP sales through Discord with Pix payments via Efí, PostgreSQL persistence, and automatic LuckPerms delivery.
 
