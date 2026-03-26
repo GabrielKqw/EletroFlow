@@ -1,41 +1,39 @@
 <svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="360" rx="28" fill="#080B16"/>
-  <rect x="18" y="18" width="1164" height="324" rx="22" fill="url(#paint0_linear)" stroke="#7C3AED" stroke-opacity="0.45" stroke-width="2"/>
-  <rect x="56" y="62" width="312" height="236" rx="22" fill="#0F1530" stroke="#60A5FA" stroke-opacity="0.5"/>
-  <rect x="444" y="62" width="312" height="236" rx="22" fill="#10122A" stroke="#C084FC" stroke-opacity="0.5"/>
-  <rect x="832" y="62" width="312" height="236" rx="22" fill="#111827" stroke="#22D3EE" stroke-opacity="0.5"/>
-  <text x="84" y="108" fill="#93C5FD" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">DISCORD</text>
+  <rect width="1200" height="360" rx="28" fill="#050505"/>
+  <rect x="18" y="18" width="1164" height="324" rx="22" fill="url(#paint0_linear)" stroke="#7F1D1D" stroke-width="2"/>
+  <rect x="56" y="62" width="312" height="236" rx="22" fill="#0E0E0E" stroke="#FAFAFA" stroke-opacity="0.28"/>
+  <rect x="444" y="62" width="312" height="236" rx="22" fill="#111111" stroke="#DC2626" stroke-opacity="0.6"/>
+  <rect x="832" y="62" width="312" height="236" rx="22" fill="#0E0E0E" stroke="#FAFAFA" stroke-opacity="0.28"/>
+  <text x="84" y="108" fill="#FAFAFA" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">DISCORD EDGE</text>
   <text x="84" y="152" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">VIP panel</text>
   <text x="84" y="184" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">private thread</text>
-  <text x="84" y="216" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">dropdown checkout</text>
+  <text x="84" y="216" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">player identity input</text>
   <text x="84" y="248" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">Pix delivery message</text>
-  <text x="472" y="108" fill="#D8B4FE" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">PLUGIN CORE</text>
-  <text x="472" y="152" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">Paper runtime</text>
-  <text x="472" y="184" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">Pix polling</text>
-  <text x="472" y="216" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">idempotent rewards</text>
-  <text x="472" y="248" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">LuckPerms grant</text>
-  <text x="860" y="108" fill="#67E8F9" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">PERSISTENCE</text>
+  <text x="472" y="108" fill="#FCA5A5" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">PLUGIN IMPACT</text>
+  <text x="472" y="152" fill="#FAFAFA" font-family="Segoe UI, Arial, sans-serif" font-size="18">Paper runtime</text>
+  <text x="472" y="184" fill="#FAFAFA" font-family="Segoe UI, Arial, sans-serif" font-size="18">Pix polling</text>
+  <text x="472" y="216" fill="#FAFAFA" font-family="Segoe UI, Arial, sans-serif" font-size="18">idempotent reward path</text>
+  <text x="472" y="248" fill="#FAFAFA" font-family="Segoe UI, Arial, sans-serif" font-size="18">LuckPerms grant</text>
+  <text x="860" y="108" fill="#FAFAFA" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">PERSISTENCE CORE</text>
   <text x="860" y="152" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">users</text>
   <text x="860" y="184" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">payments</text>
   <text x="860" y="216" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">payment transactions</text>
-  <text x="860" y="248" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">vip grants + audit logs</text>
+  <text x="860" y="248" fill="#E5E7EB" font-family="Segoe UI, Arial, sans-serif" font-size="18">vip grants and audit logs</text>
   <path d="M368 180H436" stroke="url(#paint1_linear)" stroke-width="4" stroke-linecap="round"/>
-  <path d="M756 180H824" stroke="url(#paint2_linear)" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="402" cy="180" r="8" fill="#A78BFA"/>
-  <circle cx="790" cy="180" r="8" fill="#22D3EE"/>
+  <path d="M756 180H824" stroke="url(#paint1_linear)" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="402" cy="180" r="8" fill="#DC2626"/>
+  <circle cx="790" cy="180" r="8" fill="#FAFAFA"/>
   <defs>
     <linearGradient id="paint0_linear" x1="34" y1="34" x2="1166" y2="326" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#111827"/>
-      <stop offset="0.52" stop-color="#0B1020"/>
-      <stop offset="1" stop-color="#0F172A"/>
+      <stop stop-color="#0A0A0A"/>
+      <stop offset="0.45" stop-color="#111111"/>
+      <stop offset="0.72" stop-color="#220909"/>
+      <stop offset="1" stop-color="#0A0A0A"/>
     </linearGradient>
-    <linearGradient id="paint1_linear" x1="368" y1="180" x2="436" y2="180" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#60A5FA"/>
-      <stop offset="1" stop-color="#C084FC"/>
-    </linearGradient>
-    <linearGradient id="paint2_linear" x1="756" y1="180" x2="824" y2="180" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#C084FC"/>
-      <stop offset="1" stop-color="#22D3EE"/>
+    <linearGradient id="paint1_linear" x1="368" y1="180" x2="824" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FAFAFA"/>
+      <stop offset="0.5" stop-color="#DC2626"/>
+      <stop offset="1" stop-color="#FAFAFA"/>
     </linearGradient>
   </defs>
 </svg>

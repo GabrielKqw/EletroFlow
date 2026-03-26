@@ -6,11 +6,11 @@
 
 ### Discord VIP sales, Pix checkout, PostgreSQL persistence, and LuckPerms delivery inside a single Paper plugin
 
-![Java](https://img.shields.io/badge/Java-21-18181b?style=for-the-badge&labelColor=07070a&color=60a5fa)
-![Paper](https://img.shields.io/badge/Paper-1.21.x-18181b?style=for-the-badge&labelColor=07070a&color=38bdf8)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-18181b?style=for-the-badge&labelColor=07070a&color=818cf8)
-![LuckPerms](https://img.shields.io/badge/LuckPerms-Required-18181b?style=for-the-badge&labelColor=07070a&color=c084fc)
-![JDA](https://img.shields.io/badge/JDA-5.x-18181b?style=for-the-badge&labelColor=07070a&color=22d3ee)
+![Java](https://img.shields.io/badge/Java-21-111111?style=for-the-badge&labelColor=050505&color=f5f5f5)
+![Paper](https://img.shields.io/badge/Paper-1.21.x-111111?style=for-the-badge&labelColor=050505&color=dc2626)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-111111?style=for-the-badge&labelColor=050505&color=f5f5f5)
+![LuckPerms](https://img.shields.io/badge/LuckPerms-Required-111111?style=for-the-badge&labelColor=050505&color=dc2626)
+![JDA](https://img.shields.io/badge/JDA-5.x-111111?style=for-the-badge&labelColor=050505&color=f5f5f5)
 
 </div>
 
