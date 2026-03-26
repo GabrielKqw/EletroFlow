@@ -2,15 +2,15 @@
 
 # EletroFlow
 
-<img src="./assets/eletroflow-banner.gif" alt="EletroFlow Banner" width="720" />
+<img src="./assets/eletroflow-banner.gif" alt="EletroFlow Banner" width="760" />
 
 ### Discord VIP sales, Pix checkout, PostgreSQL persistence, and LuckPerms delivery inside a single Paper plugin
 
-![Java](https://img.shields.io/badge/Java-21-9cf?style=for-the-badge&labelColor=111111&color=6ee7ff)
-![Paper](https://img.shields.io/badge/Paper-1.21.x-9cf?style=for-the-badge&labelColor=111111&color=a7f3d0)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-9cf?style=for-the-badge&labelColor=111111&color=93c5fd)
-![LuckPerms](https://img.shields.io/badge/LuckPerms-Required-9cf?style=for-the-badge&labelColor=111111&color=f9a8d4)
-![JDA](https://img.shields.io/badge/JDA-5.x-9cf?style=for-the-badge&labelColor=111111&color=c4b5fd)
+![Java](https://img.shields.io/badge/Java-21-18181b?style=for-the-badge&labelColor=07070a&color=60a5fa)
+![Paper](https://img.shields.io/badge/Paper-1.21.x-18181b?style=for-the-badge&labelColor=07070a&color=38bdf8)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-18181b?style=for-the-badge&labelColor=07070a&color=818cf8)
+![LuckPerms](https://img.shields.io/badge/LuckPerms-Required-18181b?style=for-the-badge&labelColor=07070a&color=c084fc)
+![JDA](https://img.shields.io/badge/JDA-5.x-18181b?style=for-the-badge&labelColor=07070a&color=22d3ee)
 
 </div>
 
@@ -18,15 +18,17 @@
 
 ## Overview
 
-EletroFlow is a plugin-first payment system for Minecraft servers. The Paper plugin itself connects to Discord, Efí Pix, PostgreSQL, and LuckPerms to run the full VIP purchase flow without a separate backend runtime.
+EletroFlow is a plugin-first payment system for Minecraft servers. The Paper plugin itself connects to Discord, Efi Pix, PostgreSQL, and LuckPerms to run the full VIP purchase flow without a separate backend runtime.
 
-### What it handles
+![Overview Panel](./assets/overview-panel.svg)
 
-- VIP purchase panel on Discord
+### Core Features
+
+- VIP panel publishing inside Discord
 - private purchase threads
 - Pix charge generation and reuse
-- PostgreSQL persistence
-- payment status polling
+- PostgreSQL persistence for users, payments, grants, and audit logs
+- idempotent Pix confirmation handling
 - LuckPerms VIP delivery
 - optional Discord role assignment
 
@@ -48,11 +50,13 @@ Repository layout:
 
 ## Purchase Flow
 
+![Discord Flow](./assets/discord-flow.svg)
+
 1. A staff member publishes the VIP panel with `/vip-panel`.
 2. The player clicks the panel button and receives a private thread.
 3. The player selects a VIP plan from the dropdown.
 4. The player submits Minecraft UUID and nickname.
-5. The plugin creates or reuses a Pix charge through Efí.
+5. The plugin creates or reuses a Pix charge through Efi.
 6. The payment is stored with the linked Discord identity, Minecraft identity, thread id, and selected plan.
 7. The plugin polls Pix confirmation.
 8. After confirmation, the plugin records the transaction, persists the VIP grant, applies the LuckPerms group, and can assign the configured Discord role.
@@ -78,20 +82,18 @@ Recommended server preparation:
 - enable role assignment only for VIP roles managed by the plugin
 - use private threads to keep each purchase isolated
 
-> The intended flow is simple: staff publishes the panel once, players open their own private thread, choose a VIP, send Minecraft data, and receive the Pix charge in the same thread.
+> Staff publishes the panel once, players open their own private thread, choose a VIP, submit Minecraft data, and receive the Pix charge in the same thread.
 
-![Divider](./assets/neon-divider.svg)
+### Discord Usage
 
-## Discord Usage
-
-### Staff Flow
+**Staff Flow**
 
 1. Configure the bot token and ids in [config.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/config.yml).
 2. Start the Paper server with the plugin enabled.
 3. In Discord, run `/vip-panel` in the configured server.
 4. The plugin publishes the purchase panel in the configured channel.
 
-### Player Flow
+**Player Flow**
 
 1. Click the purchase button on the panel.
 2. Wait for the plugin to open a private purchase thread.
@@ -101,7 +103,7 @@ Recommended server preparation:
 6. Wait for confirmation in the same thread.
 7. Receive the VIP in Minecraft and the optional Discord role.
 
-### Thread Behavior
+**Thread Rules**
 
 - one player owns one purchase thread at a time
 - only the ticket owner can continue the checkout steps
@@ -116,7 +118,7 @@ Recommended server preparation:
 - Paper 1.21.x
 - PostgreSQL 14+
 - JDA 5.x
-- Efí Pix API
+- Efi Pix API
 - LuckPerms
 - Maven 3.9+
 
@@ -166,7 +168,7 @@ VIP catalog:
 - server id
 - PostgreSQL connection
 - Discord token and guild/channel ids
-- Efí credentials
+- Efi credentials
 - certificate path
 - Pix expiration
 - polling intervals
@@ -188,7 +190,7 @@ VIP catalog:
 ## Installation
 
 1. Execute [init.sql](C:/Users/Admin/Desktop/pl/database/init.sql) in PostgreSQL.
-2. Adjust [config.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/config.yml) with PostgreSQL, Discord, and Efí credentials.
+2. Adjust [config.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/config.yml) with PostgreSQL, Discord, and Efi credentials.
 3. Adjust [vip-plans.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/vip-plans.yml) with the VIP catalog.
 4. Build the project with Maven.
 5. Place the generated jar inside the server `plugins` folder.
