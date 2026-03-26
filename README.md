@@ -59,6 +59,57 @@ Repository layout:
 
 ![Divider](./assets/neon-divider.svg)
 
+## Discord Setup
+
+Before using the purchase flow, configure the Discord section in [config.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/config.yml):
+
+| Field | Purpose |
+| --- | --- |
+| `token` | Discord bot token |
+| `guild-id` | Target server id |
+| `panel-channel-id` | Channel where the VIP panel will be published |
+| `support-role-id` | Role allowed to moderate purchase threads |
+| `payment-poll-interval-seconds` | Interval used to refresh payment status messages |
+
+Recommended server preparation:
+
+- keep one channel dedicated to the VIP panel
+- keep one staff role for purchase support
+- enable role assignment only for VIP roles managed by the plugin
+- use private threads to keep each purchase isolated
+
+> The intended flow is simple: staff publishes the panel once, players open their own private thread, choose a VIP, send Minecraft data, and receive the Pix charge in the same thread.
+
+![Divider](./assets/neon-divider.svg)
+
+## Discord Usage
+
+### Staff Flow
+
+1. Configure the bot token and ids in [config.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/config.yml).
+2. Start the Paper server with the plugin enabled.
+3. In Discord, run `/vip-panel` in the configured server.
+4. The plugin publishes the purchase panel in the configured channel.
+
+### Player Flow
+
+1. Click the purchase button on the panel.
+2. Wait for the plugin to open a private purchase thread.
+3. Choose the VIP plan from the dropdown.
+4. Submit Minecraft UUID and nickname.
+5. Copy the Pix code or scan the QR code sent by the bot.
+6. Wait for confirmation in the same thread.
+7. Receive the VIP in Minecraft and the optional Discord role.
+
+### Thread Behavior
+
+- one player owns one purchase thread at a time
+- only the ticket owner can continue the checkout steps
+- support staff can follow the thread without taking ownership of the purchase
+- the payment thread stores the selected plan and Pix context until confirmation
+
+![Divider](./assets/neon-divider.svg)
+
 ## Stack
 
 - Java 21
