@@ -1,59 +1,75 @@
+<div align="center">
+
 # EletroFlow
 
-![EletroFlow](./assets/eletroflow-banner.gif)
+<img src="./assets/eletroflow-banner.gif" alt="EletroFlow Banner" width="720" />
 
-EletroFlow is a Paper plugin for VIP sales through Discord with Pix payments via Efí, PostgreSQL persistence, and automatic LuckPerms delivery.
+### Discord VIP sales, Pix checkout, PostgreSQL persistence, and LuckPerms delivery inside a single Paper plugin
 
-## Stack
+![Java](https://img.shields.io/badge/Java-21-9cf?style=for-the-badge&labelColor=111111&color=6ee7ff)
+![Paper](https://img.shields.io/badge/Paper-1.21.x-9cf?style=for-the-badge&labelColor=111111&color=a7f3d0)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-9cf?style=for-the-badge&labelColor=111111&color=93c5fd)
+![LuckPerms](https://img.shields.io/badge/LuckPerms-Required-9cf?style=for-the-badge&labelColor=111111&color=f9a8d4)
+![JDA](https://img.shields.io/badge/JDA-5.x-9cf?style=for-the-badge&labelColor=111111&color=c4b5fd)
 
-- Java 21
-- Paper 1.21.x
-- PostgreSQL
-- JDA
-- Efí Pix API
-- LuckPerms
+</div>
+
+![Divider](./assets/neon-divider.svg)
+
+## Overview
+
+EletroFlow is a plugin-first payment system for Minecraft servers. The Paper plugin itself connects to Discord, Efí Pix, PostgreSQL, and LuckPerms to run the full VIP purchase flow without a separate backend runtime.
+
+### What it handles
+
+- VIP purchase panel on Discord
+- private purchase threads
+- Pix charge generation and reuse
+- PostgreSQL persistence
+- payment status polling
+- LuckPerms VIP delivery
+- optional Discord role assignment
+
+![Divider](./assets/neon-divider.svg)
 
 ## Runtime
 
-Only the plugin jar is deployed to the Minecraft server:
+Only one artifact is deployed to the Minecraft server:
 
 - [eletroflow-plugin-1.0.0-SNAPSHOT.jar](C:/Users/Admin/Desktop/pl/eletroflow-plugin/target/eletroflow-plugin-1.0.0-SNAPSHOT.jar)
 
-The plugin handles:
-
-- Discord purchase panel
-- private purchase threads
-- Pix charge generation
-- PostgreSQL persistence
-- payment polling
-- LuckPerms delivery
-- optional Discord role assignment
-
-## Purchase Flow
-
-1. A staff member publishes the VIP panel with `/vip-panel`.
-2. The player clicks the button and receives a private thread.
-3. The player selects a VIP plan from the dropdown.
-4. The player submits Minecraft UUID and nickname.
-5. The plugin creates or reuses a Pix charge through Efí.
-6. The payment is stored in PostgreSQL with the Discord thread and player identity.
-7. The plugin polls the Pix status.
-8. After confirmation, the plugin records the transaction, writes the VIP grant, applies LuckPerms, and can assign the configured Discord role.
-
-## Repository Layout
+Repository layout:
 
 - [database](C:/Users/Admin/Desktop/pl/database) contains the PostgreSQL bootstrap script
 - [eletroflow-plugin](C:/Users/Admin/Desktop/pl/eletroflow-plugin) contains the Paper plugin
 - [eletroflow-shared](C:/Users/Admin/Desktop/pl/eletroflow-shared) contains shared DTOs and enums
 
-## Requirements
+![Divider](./assets/neon-divider.svg)
+
+## Purchase Flow
+
+1. A staff member publishes the VIP panel with `/vip-panel`.
+2. The player clicks the panel button and receives a private thread.
+3. The player selects a VIP plan from the dropdown.
+4. The player submits Minecraft UUID and nickname.
+5. The plugin creates or reuses a Pix charge through Efí.
+6. The payment is stored with the linked Discord identity, Minecraft identity, thread id, and selected plan.
+7. The plugin polls Pix confirmation.
+8. After confirmation, the plugin records the transaction, persists the VIP grant, applies the LuckPerms group, and can assign the configured Discord role.
+
+![Divider](./assets/neon-divider.svg)
+
+## Stack
 
 - Java 21
-- Maven 3.9+
+- Paper 1.21.x
 - PostgreSQL 14+
-- Paper server with LuckPerms installed
-- Discord bot token
-- Efí Pix credentials and `.p12` certificate
+- JDA 5.x
+- Efí Pix API
+- LuckPerms
+- Maven 3.9+
+
+![Divider](./assets/neon-divider.svg)
 
 ## Database Setup
 
@@ -73,6 +89,8 @@ The script creates:
 - `audit_logs`
 - indexes
 
+![Divider](./assets/neon-divider.svg)
+
 ## Configuration
 
 Main plugin configuration:
@@ -87,10 +105,10 @@ VIP catalog:
 
 - server id
 - PostgreSQL connection
-- Discord token and channel ids
+- Discord token and guild/channel ids
 - Efí credentials
 - certificate path
-- payment expiration
+- Pix expiration
 - polling intervals
 
 `vip-plans.yml` defines:
@@ -105,14 +123,18 @@ VIP catalog:
 - active flag
 - sort order
 
+![Divider](./assets/neon-divider.svg)
+
 ## Installation
 
 1. Execute [init.sql](C:/Users/Admin/Desktop/pl/database/init.sql) in PostgreSQL.
-2. Adjust [config.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/config.yml) with your PostgreSQL, Discord, and Efí data.
+2. Adjust [config.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/config.yml) with PostgreSQL, Discord, and Efí credentials.
 3. Adjust [vip-plans.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/vip-plans.yml) with the VIP catalog.
 4. Build the project with Maven.
 5. Place the generated jar inside the server `plugins` folder.
-6. Start the Paper server.
+6. Start the Paper server with LuckPerms installed.
+
+![Divider](./assets/neon-divider.svg)
 
 ## Build
 
@@ -124,8 +146,10 @@ Generated artifact:
 
 - [eletroflow-plugin-1.0.0-SNAPSHOT.jar](C:/Users/Admin/Desktop/pl/eletroflow-plugin/target/eletroflow-plugin-1.0.0-SNAPSHOT.jar)
 
+![Divider](./assets/neon-divider.svg)
+
 ## Notes
 
 - The plugin does not create the schema automatically.
 - LuckPerms is required at startup.
-- The PostgreSQL schema is expected to exist before the plugin enables.
+- The PostgreSQL schema must exist before the plugin enables.
