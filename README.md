@@ -77,6 +77,15 @@ Run the bootstrap script before starting the server:
 
 - [init.sql](C:/Users/Admin/Desktop/pl/database/init.sql)
 
+Or execute the commands manually in PostgreSQL:
+
+```sql
+CREATE USER eletroflow WITH PASSWORD 'troque_essa_senha';
+CREATE DATABASE eletroflow OWNER eletroflow;
+GRANT ALL PRIVILEGES ON DATABASE eletroflow TO eletroflow;
+\connect eletroflow;
+```
+
 The script creates:
 
 - PostgreSQL user
