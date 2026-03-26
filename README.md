@@ -27,6 +27,8 @@ EletroFlow is a plugin-first payment system for Minecraft servers. The Paper plu
 - VIP panel publishing inside Discord
 - private purchase threads
 - Pix charge generation and reuse
+- QR Code delivery inside Discord threads
+- PDF receipt delivery after payment approval
 - PostgreSQL persistence for users, payments, grants, and audit logs
 - idempotent Pix confirmation handling
 - LuckPerms VIP delivery
@@ -54,11 +56,11 @@ Repository layout:
 1. A staff member publishes the VIP panel with `/vip-panel`.
 2. The player clicks the panel button and receives a private thread.
 3. The player selects a VIP plan from the dropdown.
-4. The player submits Minecraft UUID and nickname.
+4. The player submits the Minecraft nickname and payer CPF.
 5. The plugin creates or reuses a Pix charge through Efi.
-6. The payment is stored with the linked Discord identity, Minecraft identity, thread id, and selected plan.
+6. The plugin stores the linked Discord identity, Minecraft identity, payer data, thread id, and selected plan.
 7. The plugin polls Pix confirmation.
-8. After confirmation, the plugin records the transaction, persists the VIP grant, and applies the LuckPerms group.
+8. After confirmation, the plugin records the transaction, persists the VIP grant, applies the LuckPerms group, and sends a PDF receipt in the same thread.
 
 ![Divider](./assets/neon-divider.svg)
 
@@ -72,7 +74,7 @@ Before using the purchase flow, configure the Discord section in [config.yml](C:
 | `guild-id` | Target server id |
 | `panel-channel-id` | Channel where the VIP panel will be published |
 | `support-role-id` | Role allowed to moderate purchase threads |
-| `payment-poll-interval-seconds` | Interval used to refresh payment status messages |
+| `payment-poll-interval-seconds` | Interval used by the bot-side payment refresh flow |
 
 Recommended server preparation:
 
@@ -96,10 +98,10 @@ Recommended server preparation:
 1. Click the purchase button on the panel.
 2. Wait for the plugin to open a private purchase thread.
 3. Choose the VIP plan from the dropdown.
-4. Submit Minecraft UUID and nickname.
-5. Copy the Pix code or scan the QR code sent by the bot.
+4. Submit the Minecraft nickname and payer CPF.
+5. Copy the Pix code or use the QR code attached by the bot.
 6. Wait for confirmation in the same thread.
-7. Receive the VIP group in Minecraft.
+7. Receive the VIP group in Minecraft and the payment receipt PDF in Discord.
 
 **Thread Rules**
 
@@ -164,10 +166,12 @@ VIP catalog:
 `config.yml` defines:
 
 - server id
+- Minecraft online-mode UUID resolution
 - PostgreSQL connection
 - Discord token and guild/channel ids
 - Efi credentials
 - certificate path
+- receiver name and receiver document for receipt generation
 - Pix expiration
 - polling intervals
 
@@ -212,5 +216,7 @@ Generated artifact:
 - The plugin does not create the schema automatically.
 - LuckPerms is required at startup.
 - The PostgreSQL schema must exist before the plugin enables.
+- `efi.receiver-name` and `efi.receiver-document` should be filled so the generated PDF receipt contains the receiver identity.
+- The purchase modal asks for Minecraft nickname and payer CPF.
 
 ![EletroFlow Outro](./assets/eletroflow-footer.gif)
