@@ -1,6 +1,6 @@
 token: change-me
 guildId: "0"
-ticketCategoryId: "0"
+ticketPanelChannelId: "0"
 supportRoleId: "0"
 backendBaseUrl: http://localhost:8080
 paymentPollIntervalSeconds: 20

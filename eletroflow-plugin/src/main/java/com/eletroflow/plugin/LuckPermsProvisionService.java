@@ -1,10 +1,12 @@
 package com.eletroflow.plugin;
 
-import com.eletroflow.shared.dto.PendingRewardResponse;
+import com.eletroflow.plugin.model.PaymentRecord;
+import com.eletroflow.plugin.model.PlanRecord;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.model.user.User;
-import net.luckperms.api.node.Node;
+import net.luckperms.api.node.types.InheritanceNode;
 
 public class LuckPermsProvisionService {
 
@@ -14,12 +16,13 @@ public class LuckPermsProvisionService {
         this.luckPerms = luckPerms;
     }
 
-    public String grant(PendingRewardResponse reward) throws Exception {
-        UUID uniqueId = UUID.fromString(reward.minecraftUuid());
+    public void grant(PaymentRecord payment, PlanRecord plan) throws Exception {
+        UUID uniqueId = UUID.fromString(payment.minecraftUuid());
         User user = luckPerms.getUserManager().loadUser(uniqueId).get();
-        Node node = Node.builder("group." + reward.luckPermsGroup()).build();
+        InheritanceNode node = InheritanceNode.builder(plan.luckPermsGroup())
+                .expiry(plan.durationDays(), TimeUnit.DAYS)
+                .build();
         user.data().add(node);
         luckPerms.getUserManager().saveUser(user);
-        return reward.minecraftUuid() + ":" + reward.luckPermsGroup();
     }
 }

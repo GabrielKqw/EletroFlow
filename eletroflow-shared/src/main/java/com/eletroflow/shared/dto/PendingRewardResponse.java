@@ -10,6 +10,7 @@ public record PendingRewardResponse(
         String minecraftUuid,
         String minecraftUsername,
         String planKey,
+        int durationDays,
         String luckPermsGroup,
         String discordRoleId,
         ProvisionStatus status,

@@ -44,6 +44,7 @@ public class RewardDispatchService {
 
     @Transactional
     public List<PendingRewardResponse> claimPendingRewards() {
+        requeueStaleProcessingRewards();
         return provisionRewardRepository.findTop20ByStatusOrderByCreatedAtAsc(ProvisionStatus.PENDING).stream()
                 .map(reward -> {
                     reward.setStatus(ProvisionStatus.PROCESSING);
@@ -58,6 +59,18 @@ public class RewardDispatchService {
                     return paymentMapper.toPendingRewardResponse(saved, payment, user, plan);
                 })
                 .toList();
+    }
+
+    private void requeueStaleProcessingRewards() {
+        OffsetDateTime threshold = OffsetDateTime.now().minusMinutes(5);
+        provisionRewardRepository.findByStatusAndUpdatedAtBefore(ProvisionStatus.PROCESSING, threshold)
+                .forEach(reward -> {
+                    reward.setStatus(ProvisionStatus.PENDING);
+                    reward.setUpdatedAt(OffsetDateTime.now());
+                    reward.setFailureReason(null);
+                    provisionRewardRepository.save(reward);
+                    auditLogService.log("REWARD", reward.getId(), "REWARD_REQUEUED", "stale processing recovered");
+                });
     }
 
     @Transactional

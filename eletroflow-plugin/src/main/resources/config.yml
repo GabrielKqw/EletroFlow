@@ -1,8 +1,26 @@
 server:
   id: survival-01
 
-backend:
-  base-url: http://localhost:8080
+database:
+  jdbc-url: jdbc:postgresql://localhost:5432/eletroflow
+  username: eletroflow
+  password: eletroflow
+
+discord:
+  token: change-me
+  guild-id: "0"
+  panel-channel-id: "0"
+  support-role-id: "0"
+  payment-poll-interval-seconds: 20
+
+efi:
+  base-url: https://pix-h.api.efipay.com.br
+  client-id: change-me
+  client-secret: change-me
+  certificate-path: C:/eletroflow/certs/efi.p12
+  certificate-password: ""
+  pix-key: change-me
+  charge-expiration-seconds: 1800
 
 sync:
   interval-ticks: 200

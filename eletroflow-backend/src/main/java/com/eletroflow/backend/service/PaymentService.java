@@ -50,11 +50,25 @@ public class PaymentService {
         VipPlanEntity plan = vipPlanRepository.findById(request.planKey())
                 .filter(VipPlanEntity::isActive)
                 .orElseThrow(() -> new IllegalArgumentException("Plan not found: " + request.planKey()));
+        if (request.minecraftUuid() == null || request.minecraftUuid().isBlank()) {
+            throw new IllegalArgumentException("Minecraft UUID is required");
+        }
+        if (request.minecraftUsername() == null || request.minecraftUsername().isBlank()) {
+            throw new IllegalArgumentException("Minecraft username is required");
+        }
         UserAccountEntity user = userAccountService.upsertDiscordUser(
                 request.discordId(),
                 request.minecraftUuid(),
                 request.minecraftUsername()
         );
+        PaymentEntity existingPendingPayment = paymentRepository
+                .findTopByUserIdAndPlanIdAndStatusOrderByCreatedAtDesc(user.getId(), plan.getId(), PaymentStatus.PENDING)
+                .filter(payment -> payment.getExpiresAt().isAfter(OffsetDateTime.now()))
+                .orElse(null);
+        if (existingPendingPayment != null) {
+            auditLogService.log("PAYMENT", existingPendingPayment.getId(), "PIX_REUSED", "txid=" + existingPendingPayment.getTxid());
+            return paymentMapper.toPaymentResponse(existingPendingPayment, plan);
+        }
         EfiPixClient.PixChargeResponse pixChargeResponse = efiPixClient.createCharge(plan.getAmount(), request.discordId());
         OffsetDateTime now = OffsetDateTime.now();
         PaymentEntity payment = new PaymentEntity();

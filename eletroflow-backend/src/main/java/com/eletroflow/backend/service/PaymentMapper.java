@@ -33,6 +33,7 @@ public class PaymentMapper {
                 user.getMinecraftUuid(),
                 user.getMinecraftUsername(),
                 plan.getId(),
+                plan.getDurationDays(),
                 reward.getLuckPermsGroup(),
                 reward.getDiscordRoleId(),
                 reward.getStatus(),

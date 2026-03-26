@@ -10,8 +10,6 @@
 
     <modules>
         <module>eletroflow-shared</module>
-        <module>eletroflow-backend</module>
-        <module>eletroflow-discord-bot</module>
         <module>eletroflow-plugin</module>
     </modules>
 
@@ -83,4 +81,3 @@
         </pluginManagement>
     </build>
 </project>
-

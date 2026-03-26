@@ -4,8 +4,11 @@ import com.eletroflow.discord.config.BotConfiguration;
 import com.eletroflow.shared.dto.CreatePaymentRequest;
 import com.eletroflow.shared.dto.PaymentResponse;
 import com.eletroflow.shared.dto.PaymentStatusResponse;
+import com.eletroflow.shared.dto.VipPlanResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.List;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -54,6 +57,22 @@ public class BackendClient {
                 throw new IllegalStateException("Payment lookup failed with status " + response.code());
             }
             return objectMapper.readValue(response.body().string(), PaymentStatusResponse.class);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to call backend", exception);
+        }
+    }
+
+    public List<VipPlanResponse> listVipPlans() {
+        Request request = new Request.Builder()
+                .url(configuration.backendBaseUrl() + "/api/vip-plans")
+                .get()
+                .build();
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful() || response.body() == null) {
+                throw new IllegalStateException("VIP plan lookup failed with status " + response.code());
+            }
+            return objectMapper.readValue(response.body().string(), new TypeReference<>() {
+            });
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to call backend", exception);
         }

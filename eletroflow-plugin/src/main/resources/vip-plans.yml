@@ -1,5 +1,19 @@
 plans:
   vip-bronze:
+    displayName: VIP Bronze
+    amount: 19.90
+    currency: BRL
     luckPermsGroup: vipbronze
+    discordRoleId: "0"
+    durationDays: 30
+    active: true
+    sortOrder: 1
   vip-gold:
+    displayName: VIP Gold
+    amount: 39.90
+    currency: BRL
     luckPermsGroup: vipgold
+    discordRoleId: "0"
+    durationDays: 30
+    active: true
+    sortOrder: 2

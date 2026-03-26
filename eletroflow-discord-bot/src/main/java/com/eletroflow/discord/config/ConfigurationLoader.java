@@ -15,10 +15,6 @@ public class ConfigurationLoader {
         return objectMapper.readValue(resolve("bot-config.yml").toFile(), BotConfiguration.class);
     }
 
-    public PlanCatalog loadPlanCatalog() throws IOException {
-        return objectMapper.readValue(resolve("vip-plans.yml").toFile(), PlanCatalog.class);
-    }
-
     public ObjectMapper objectMapper() {
         return objectMapper;
     }
