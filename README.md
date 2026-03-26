@@ -215,3 +215,5 @@ Generated artifact:
 - The plugin does not create the schema automatically.
 - LuckPerms is required at startup.
 - The PostgreSQL schema must exist before the plugin enables.
+
+![EletroFlow Outro](./assets/eletroflow-footer.gif)
