@@ -59,7 +59,7 @@ Repository layout:
 4. The player submits the Minecraft nickname and payer CPF.
 5. The plugin creates or reuses a Pix charge through Efi.
 6. The plugin stores the linked Discord identity, Minecraft identity, payer data, thread id, and selected plan.
-7. The plugin polls Pix confirmation.
+7. The plugin reconciles Pix approval through webhook and polling.
 8. After confirmation, the plugin records the transaction, persists the VIP grant, applies the LuckPerms group, and sends a PDF receipt in the same thread.
 
 ![Divider](./assets/neon-divider.svg)
@@ -149,6 +149,7 @@ The script creates:
 - `payment_transactions`
 - `vip_grants`
 - `audit_logs`
+- `schema_versions`
 - indexes
 
 ![Divider](./assets/neon-divider.svg)
@@ -172,6 +173,7 @@ VIP catalog:
 - Efi credentials
 - certificate path
 - receiver name and receiver document for receipt generation
+- webhook listener settings
 - Pix expiration
 - polling intervals
 
@@ -191,11 +193,58 @@ VIP catalog:
 ## Installation
 
 1. Execute [init.sql](C:/Users/Admin/Desktop/pl/database/init.sql) in PostgreSQL.
-2. Adjust [config.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/config.yml) with PostgreSQL, Discord, and Efi credentials.
+2. Adjust [config.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/config.yml) with PostgreSQL, Discord, Efi, and webhook data.
 3. Adjust [vip-plans.yml](C:/Users/Admin/Desktop/pl/eletroflow-plugin/src/main/resources/vip-plans.yml) with the VIP catalog.
 4. Build the project with Maven.
 5. Place the generated jar inside the server `plugins` folder.
 6. Start the Paper server with LuckPerms installed.
+7. The plugin validates the config on startup and applies any pending schema migrations registered in `db/migration`.
+
+Minimal `config.yml` structure:
+
+```yml
+server:
+  id: survival-01
+
+minecraft:
+  online-mode: true
+
+database:
+  jdbc-url: jdbc:postgresql://localhost:5432/eletroflow
+  username: eletroflow
+  password: strong-password
+
+discord:
+  token: your-bot-token
+  guild-id: "123456789012345678"
+  panel-channel-id: "123456789012345678"
+  support-role-id: "123456789012345678"
+  payment-poll-interval-seconds: 20
+
+efi:
+  base-url: https://pix.api.efipay.com.br
+  client-id: your-client-id
+  client-secret: your-client-secret
+  certificate-path: C:/eletroflow/certs/efi.p12
+  certificate-password: ""
+  pix-key: your-pix-key
+  charge-expiration-seconds: 1800
+  receiver-name: Your Server Name
+  receiver-document: 12345678000199
+
+webhook:
+  enabled: true
+  bind-address: 0.0.0.0
+  port: 8086
+  path: /eletroflow/webhook
+  public-url: https://your-domain.com/eletroflow/webhook?token=your-secret-token&ignorar=
+  token: your-secret-token
+  auto-register: true
+  skip-mtls-checking: true
+
+sync:
+  interval-ticks: 200
+```
 
 ![Divider](./assets/neon-divider.svg)
 
@@ -213,10 +262,11 @@ Generated artifact:
 
 ## Notes
 
-- The plugin does not create the schema automatically.
+- The plugin expects the database bootstrap script to be executed before first startup.
+- After bootstrap, the plugin applies incremental schema migrations automatically.
 - LuckPerms is required at startup.
-- The PostgreSQL schema must exist before the plugin enables.
 - `efi.receiver-name` and `efi.receiver-document` should be filled so the generated PDF receipt contains the receiver identity.
 - The purchase modal asks for Minecraft nickname and payer CPF.
+- Webhook and poller can run together, and both paths are idempotent for Pix confirmation.
 
 ![EletroFlow Outro](./assets/eletroflow-footer.gif)
