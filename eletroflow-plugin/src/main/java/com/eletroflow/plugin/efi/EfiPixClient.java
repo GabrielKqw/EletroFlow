@@ -14,6 +14,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Base64;
+import java.util.Map;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -76,12 +77,7 @@ public class EfiPixClient {
     }
 
     public PaymentCheckResult checkPayment(String txid) {
-        ChargeStatusResponse response = executeAuthorizedRequest(
-                buildBaseUrl().newBuilder().addPathSegments("v2/cob/" + txid).build(),
-                "GET",
-                null,
-                ChargeStatusResponse.class
-        );
+        ChargeStatusResponse response = getChargeStatus(txid);
         if (!"CONCLUIDA".equalsIgnoreCase(response.status())) {
             return new PaymentCheckResult(false, null, null);
         }
@@ -90,6 +86,26 @@ public class EfiPixClient {
                 true,
                 pix == null || pix.horario() == null ? OffsetDateTime.now() : OffsetDateTime.parse(pix.horario()),
                 pix == null ? txid : pix.endToEndId()
+        );
+    }
+
+    public ChargeStatusSnapshot getChargeStatusSnapshot(String txid) {
+        ChargeStatusResponse response = getChargeStatus(txid);
+        PixReceipt pix = response.pix() == null || response.pix().isEmpty() ? null : response.pix().getFirst();
+        return new ChargeStatusSnapshot(
+                response.status(),
+                pix == null || pix.horario() == null ? null : OffsetDateTime.parse(pix.horario()),
+                pix == null ? null : pix.endToEndId()
+        );
+    }
+
+    public void registerWebhook(String webhookUrl, boolean skipMtlsChecking) {
+        executeAuthorizedRequest(
+                buildBaseUrl().newBuilder().addPathSegments("v2/webhook/" + settings.pixKey()).build(),
+                "PUT",
+                new WebhookRequest(webhookUrl),
+                EmptyResponse.class,
+                Map.of("x-skip-mtls-checking", Boolean.toString(skipMtlsChecking))
         );
     }
 
@@ -119,12 +135,27 @@ public class EfiPixClient {
         }
     }
 
+    private ChargeStatusResponse getChargeStatus(String txid) {
+        return executeAuthorizedRequest(
+                buildBaseUrl().newBuilder().addPathSegments("v2/cob/" + txid).build(),
+                "GET",
+                null,
+                ChargeStatusResponse.class,
+                Map.of()
+        );
+    }
+
     private <T> T executeAuthorizedRequest(HttpUrl url, String method, Object payload, Class<T> responseType) {
+        return executeAuthorizedRequest(url, method, payload, responseType, Map.of());
+    }
+
+    private <T> T executeAuthorizedRequest(HttpUrl url, String method, Object payload, Class<T> responseType, Map<String, String> headers) {
         try {
             RequestBody body = payload == null ? null : RequestBody.create(objectMapper.writeValueAsString(payload), JSON);
             Request.Builder builder = new Request.Builder()
                     .url(url)
                     .header("Authorization", "Bearer " + accessToken());
+            headers.forEach(builder::header);
             if ("PUT".equals(method)) {
                 builder.put(body);
             } else {
@@ -225,6 +256,12 @@ public class EfiPixClient {
     private record ChargeStatusResponse(String status, java.util.List<PixReceipt> pix) {
     }
 
+    private record WebhookRequest(@JsonProperty("webhookUrl") String webhookUrl) {
+    }
+
+    private record EmptyResponse() {
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record PixReceipt(String endToEndId, String horario) {
     }
@@ -236,5 +273,19 @@ public class EfiPixClient {
             String qrCodeUrl,
             OffsetDateTime expiresAt
     ) {
+    }
+
+    public record ChargeStatusSnapshot(
+            String status,
+            OffsetDateTime confirmedAt,
+            String endToEndId
+    ) {
+        public boolean active() {
+            return "ATIVA".equalsIgnoreCase(status);
+        }
+
+        public boolean concluded() {
+            return "CONCLUIDA".equalsIgnoreCase(status);
+        }
     }
 }

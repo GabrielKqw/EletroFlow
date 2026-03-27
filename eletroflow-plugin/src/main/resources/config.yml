@@ -27,5 +27,15 @@ efi:
   receiver-name: change-me
   receiver-document: change-me
 
+webhook:
+  enabled: false
+  bind-address: 0.0.0.0
+  port: 8086
+  path: /eletroflow/webhook
+  public-url: https://example.com/eletroflow/webhook?token=change-me&ignorar=
+  token: change-me
+  auto-register: true
+  skip-mtls-checking: true
+
 sync:
   interval-ticks: 200

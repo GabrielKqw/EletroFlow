@@ -50,6 +50,16 @@ public class PluginConfigurationLoader {
                         config.getString("efi.receiver-name"),
                         config.getString("efi.receiver-document")
                 ),
+                new WebhookSettings(
+                        config.getBoolean("webhook.enabled", false),
+                        config.getString("webhook.bind-address", "0.0.0.0"),
+                        config.getInt("webhook.port", 8086),
+                        config.getString("webhook.path", "/eletroflow/webhook"),
+                        config.getString("webhook.public-url"),
+                        config.getString("webhook.token"),
+                        config.getBoolean("webhook.auto-register", true),
+                        config.getBoolean("webhook.skip-mtls-checking", true)
+                ),
                 config.getLong("sync.interval-ticks", 200L)
         );
     }

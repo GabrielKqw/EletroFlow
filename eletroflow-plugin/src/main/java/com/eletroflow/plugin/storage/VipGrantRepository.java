@@ -29,7 +29,32 @@ public class VipGrantRepository {
         }
     }
 
-    public void saveGranted(PaymentRecord payment, PlanRecord plan) {
+    public OffsetDateTime findLatestActiveExpiry(String userId, String luckPermsGroup) {
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     select max(expires_at) as expires_at
+                     from vip_grants
+                     where user_id = ?
+                       and luckperms_group = ?
+                       and status = ?
+                       and expires_at > ?
+                     """)) {
+            statement.setString(1, userId);
+            statement.setString(2, luckPermsGroup);
+            statement.setString(3, "GRANTED");
+            statement.setObject(4, OffsetDateTime.now());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return null;
+                }
+                return resultSet.getObject("expires_at", OffsetDateTime.class);
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load active vip grant expiry", exception);
+        }
+    }
+
+    public void saveGranted(PaymentRecord payment, PlanRecord plan, OffsetDateTime expiresAt) {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      insert into vip_grants (
@@ -43,7 +68,7 @@ public class VipGrantRepository {
             statement.setString(4, plan.key());
             statement.setString(5, plan.luckPermsGroup());
             statement.setObject(6, grantedAt);
-            statement.setObject(7, grantedAt.plusDays(plan.durationDays()));
+            statement.setObject(7, expiresAt);
             statement.setString(8, "GRANTED");
             statement.executeUpdate();
         } catch (SQLException exception) {

@@ -21,19 +21,33 @@ public class PaymentRepository {
         this.databaseManager = databaseManager;
     }
 
-    public Optional<PaymentRecord> findReusablePendingPayment(String discordId, String planKey) {
+    public Optional<PaymentRecord> findReusablePendingPayment(
+            String discordId,
+            String planKey,
+            String minecraftUsername,
+            String payerCpf,
+            String threadId
+    ) {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      select p.*, u.discord_id, u.minecraft_uuid, u.minecraft_username
                      from payments p
                      join users u on u.user_id = p.user_id
-                     where u.discord_id = ? and p.plan_key = ? and p.status = ?
+                     where u.discord_id = ?
+                       and p.plan_key = ?
+                       and p.status = ?
+                       and u.minecraft_username = ?
+                       and p.payer_cpf = ?
+                       and p.discord_thread_id = ?
                      order by created_at desc
                      limit 1
                      """)) {
             statement.setString(1, discordId);
             statement.setString(2, planKey);
             statement.setString(3, PaymentStatus.PENDING.name());
+            statement.setString(4, minecraftUsername);
+            statement.setString(5, payerCpf);
+            statement.setString(6, threadId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
                     return Optional.empty();
@@ -46,6 +60,27 @@ public class PaymentRepository {
             }
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load pending payment", exception);
+        }
+    }
+
+    public Optional<PaymentRecord> findByTxid(String txid) {
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     select p.*, u.discord_id, u.minecraft_uuid, u.minecraft_username
+                     from payments p
+                     join users u on u.user_id = p.user_id
+                     where p.txid = ?
+                     limit 1
+                     """)) {
+            statement.setString(1, txid);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(map(resultSet));
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load payment by txid", exception);
         }
     }
 

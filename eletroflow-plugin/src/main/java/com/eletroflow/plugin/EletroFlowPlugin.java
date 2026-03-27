@@ -2,8 +2,11 @@ package com.eletroflow.plugin;
 
 import com.eletroflow.plugin.config.PluginConfigurationLoader;
 import com.eletroflow.plugin.config.PluginSettings;
+import com.eletroflow.plugin.config.PluginStartupValidator;
 import com.eletroflow.plugin.efi.EfiPixClient;
 import com.eletroflow.plugin.service.DiscordBotService;
+import com.eletroflow.plugin.service.EfiWebhookService;
+import com.eletroflow.plugin.service.PaymentConfirmationService;
 import com.eletroflow.plugin.service.MinecraftIdentityService;
 import com.eletroflow.plugin.service.PaymentPollService;
 import com.eletroflow.plugin.service.PaymentService;
@@ -13,6 +16,7 @@ import com.eletroflow.plugin.storage.DatabaseManager;
 import com.eletroflow.plugin.storage.PaymentRepository;
 import com.eletroflow.plugin.storage.PaymentTransactionRepository;
 import com.eletroflow.plugin.storage.PlanRepository;
+import com.eletroflow.plugin.storage.SchemaMigrationService;
 import com.eletroflow.plugin.storage.UserRepository;
 import com.eletroflow.plugin.storage.VipGrantRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +29,7 @@ public class EletroFlowPlugin extends JavaPlugin {
 
     private DiscordBotService discordBotService;
     private PaymentPollService paymentPollService;
+    private EfiWebhookService efiWebhookService;
 
     @Override
     public void onEnable() {
@@ -32,10 +37,17 @@ public class EletroFlowPlugin extends JavaPlugin {
         saveResource("vip-plans.yml", false);
         PluginConfigurationLoader loader = new PluginConfigurationLoader(this);
         PluginSettings settings = loader.loadSettings();
+        var vipPlans = loader.loadVipPlans();
+        new PluginStartupValidator().validate(settings, vipPlans);
+        getLogger().info("Loaded " + vipPlans.size() + " VIP plans from vip-plans.yml");
         DatabaseManager databaseManager = new DatabaseManager(settings.database());
         validateDatabaseConnection(databaseManager);
+        getLogger().info("PostgreSQL connection validated for server " + settings.serverId());
+        new SchemaMigrationService(databaseManager).migrate();
+        getLogger().info("Schema migrations checked successfully");
         PlanRepository planRepository = new PlanRepository(databaseManager);
-        planRepository.sync(loader.loadVipPlans());
+        planRepository.sync(vipPlans);
+        getLogger().info("VIP catalog synchronized to PostgreSQL");
         LuckPerms luckPerms = LuckPermsProvider.get();
         PaymentRepository paymentRepository = new PaymentRepository(databaseManager);
         UserRepository userRepository = new UserRepository(databaseManager);
@@ -54,27 +66,37 @@ public class EletroFlowPlugin extends JavaPlugin {
                 efiPixClient
         );
         discordBotService = new DiscordBotService(settings.discord(), planRepository, paymentService, receiptPdfService);
+        PaymentConfirmationService paymentConfirmationService = new PaymentConfirmationService(
+                paymentRepository,
+                paymentTransactionRepository,
+                planRepository,
+                vipGrantRepository,
+                auditLogRepository,
+                new LuckPermsProvisionService(luckPerms),
+                discordBotService
+        );
         try {
             discordBotService.start();
+            getLogger().info("Discord integration started");
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to start Discord integration", exception);
         }
+        efiWebhookService = new EfiWebhookService(this, settings.webhook(), objectMapper, paymentRepository, paymentConfirmationService, efiPixClient);
+        efiWebhookService.start();
         paymentPollService = new PaymentPollService(
                 this,
                 paymentRepository,
-                planRepository,
-                paymentTransactionRepository,
-                vipGrantRepository,
-                auditLogRepository,
                 efiPixClient,
-                new LuckPermsProvisionService(luckPerms),
-                discordBotService
+                paymentConfirmationService
         );
         paymentPollService.start(settings.syncIntervalTicks());
     }
 
     @Override
     public void onDisable() {
+        if (efiWebhookService != null) {
+            efiWebhookService.stop();
+        }
         if (paymentPollService != null) {
             paymentPollService.stop();
         }

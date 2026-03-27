@@ -73,6 +73,12 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMPTZ NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS schema_versions (
+    version VARCHAR(40) PRIMARY KEY,
+    description VARCHAR(200) NOT NULL,
+    applied_at TIMESTAMPTZ NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_payments_status_created_at ON payments(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_users_discord_id ON users(discord_id);
 CREATE INDEX IF NOT EXISTS idx_users_minecraft_uuid ON users(minecraft_uuid);

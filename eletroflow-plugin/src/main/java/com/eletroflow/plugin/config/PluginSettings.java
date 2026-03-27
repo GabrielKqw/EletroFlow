@@ -6,6 +6,7 @@ public record PluginSettings(
         DatabaseSettings database,
         DiscordSettings discord,
         EfiSettings efi,
+        WebhookSettings webhook,
         long syncIntervalTicks
 ) {
 }

@@ -11,8 +11,11 @@ import com.eletroflow.plugin.storage.UserRepository;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 public class PaymentService {
+
+    private static final Logger LOGGER = Logger.getLogger(PaymentService.class.getName());
 
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
@@ -44,10 +47,25 @@ public class PaymentService {
         MinecraftIdentityService.ResolvedMinecraftIdentity identity = minecraftIdentityService.resolve(minecraftUsername);
         String normalizedCpf = normalizeCpf(payerCpf);
         UserRecord user = userRepository.upsert(discordId, identity.uuid(), identity.username());
-        Optional<PaymentRecord> reusable = paymentRepository.findReusablePendingPayment(discordId, plan.key());
+        Optional<PaymentRecord> reusable = paymentRepository.findReusablePendingPayment(
+                discordId,
+                plan.key(),
+                identity.username(),
+                normalizedCpf,
+                threadId
+        );
         if (reusable.isPresent()) {
-            auditLogRepository.save("PAYMENT", reusable.get().id(), "PIX_REUSED", "txid=" + reusable.get().txid());
-            return reusable.get();
+            PaymentRecord existingPayment = reusable.get();
+            EfiPixClient.ChargeStatusSnapshot snapshot = efiPixClient.getChargeStatusSnapshot(existingPayment.txid());
+            if (snapshot.concluded()) {
+                LOGGER.info("Pix already concluded for txid " + existingPayment.txid() + ", waiting for confirmation delivery");
+                throw new IllegalStateException("Seu pagamento anterior ja foi identificado e esta em processamento. Aguarde alguns instantes.");
+            }
+            if (snapshot.active() && existingPayment.expiresAt().isAfter(OffsetDateTime.now())) {
+                LOGGER.info("Reusing active Pix charge txid " + existingPayment.txid() + " for Discord " + discordId);
+                auditLogRepository.save("PAYMENT", existingPayment.id(), "PIX_REUSED", "txid=" + existingPayment.txid());
+                return existingPayment;
+            }
         }
         EfiPixClient.PixCharge pixCharge = efiPixClient.createCharge(
                 plan.amount(),
@@ -55,6 +73,7 @@ public class PaymentService {
                 identity.username(),
                 normalizedCpf
         );
+        LOGGER.info("Created new Pix charge txid " + pixCharge.txid() + " for Discord " + discordId + " and plan " + plan.key());
         PaymentCreation creation = new PaymentCreation(
                 UUID.randomUUID().toString(),
                 user.id(),
